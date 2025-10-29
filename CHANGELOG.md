@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 - Added a JUCE patch step during configure to eliminate MSVC static analysis warnings from upstream headers.
+- Updated HostTempo to use juce::AudioPlayHead::getPosition for modern host compatibility.
+- Removed obsolete JUCE splash-screen define and improved JUCE warning patch annotations.
 
 ## [0.1.0] - 2024-XX-XX
 - Initial JUCE/CMake scaffold for the Dustbox VST3 effect.

@@ -19,19 +19,34 @@ class HostTempo
 public:
     void updateFromPlayHead(juce::AudioPlayHead* playHead)
     {
-        juce::AudioPlayHead::CurrentPositionInfo info;
-        if (playHead != nullptr && playHead->getCurrentPosition(info))
+        if (playHead == nullptr)
         {
-            bpm = info.bpm > 0.0 ? info.bpm : fallbackBpm;
-            timeSigNumerator = info.timeSigNumerator > 0 ? info.timeSigNumerator : 4;
-            timeSigDenominator = info.timeSigDenominator > 0 ? info.timeSigDenominator : 4;
+            resetToFallback();
+            return;
         }
-        else
+
+        if (const auto position = playHead->getPosition())
         {
-            bpm = fallbackBpm;
-            timeSigNumerator = 4;
-            timeSigDenominator = 4;
+            if (const auto bpmValue = position->getBpm())
+                bpm = *bpmValue > 0.0 ? *bpmValue : fallbackBpm;
+            else
+                bpm = fallbackBpm;
+
+            if (const auto signature = position->getTimeSignature())
+            {
+                timeSigNumerator = signature->numerator > 0 ? signature->numerator : 4;
+                timeSigDenominator = signature->denominator > 0 ? signature->denominator : 4;
+            }
+            else
+            {
+                timeSigNumerator = 4;
+                timeSigDenominator = 4;
+            }
+
+            return;
         }
+
+        resetToFallback();
     }
 
     double getBpm() const noexcept { return bpm; }
@@ -60,6 +75,13 @@ public:
     }
 
 private:
+    void resetToFallback() noexcept
+    {
+        bpm = fallbackBpm;
+        timeSigNumerator = 4;
+        timeSigDenominator = 4;
+    }
+
     double bpm { fallbackBpm };
     int timeSigNumerator { 4 };
     int timeSigDenominator { 4 };
