@@ -56,7 +56,6 @@ target_compile_definitions(Dustbox
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0
-        JUCE_DISPLAY_SPLASH_SCREEN=0
         JUCE_REPORT_APP_USAGE=0
         JucePlugin_ManufacturerCode=0x434D4C42 # CMLB
         JucePlugin_PluginCode=0x44627831 # Dbx1
