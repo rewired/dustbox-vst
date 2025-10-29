@@ -17,7 +17,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(ToolchainWarnings)
 
 juce_add_plugin(Dustbox
-    COMPANY_NAME "Communit Labs"
+    COMPANY_NAME "7OOP3D"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE
