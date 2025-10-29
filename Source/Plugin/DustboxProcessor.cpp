@@ -218,27 +218,29 @@ void DustboxProcessor::changeProgramName(int index, const juce::String& newName)
 
 void DustboxProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
-    if (auto state = valueTreeState.copyState(); state.isValid())
-    {
-        if (auto xml = state.createXml())
-            copyXmlToBinary(*xml, destData);
-    }
+    // JUCE 7 exposed copyState(); JUCE 8 made it non-const, so grab the ValueTree directly.
+    auto state = valueTreeState.state;
+    if (auto xml = state.createXml())
+        copyXmlToBinary(*xml, destData);
 }
 
 void DustboxProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
     if (auto xml = getXmlFromBinary(data, sizeInBytes))
     {
-        if (auto tree = juce::ValueTree::fromXml(*xml); tree.isValid())
-        {
-            valueTreeState.replaceState(tree);
+        auto restoredState = juce::ValueTree::fromXml(*xml);
 
-            if (! factoryPresets.empty())
-            {
-                const auto match = findPresetIndexMatchingState(valueTreeState.copyState());
-                if (match >= 0)
-                    currentProgramIndex = match;
-            }
+        if (! restoredState.isValid())
+            return;
+
+        // JUCE 8 prefers replaceState with an explicit ValueTree instead of copyState round-trips.
+        valueTreeState.replaceState(restoredState);
+
+        if (! factoryPresets.empty())
+        {
+            const auto match = findPresetIndexMatchingState(restoredState);
+            if (match >= 0)
+                currentProgramIndex = match;
         }
     }
 }

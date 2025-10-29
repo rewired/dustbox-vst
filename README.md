@@ -14,6 +14,8 @@ Dustbox is a JUCE-based audio effect plugin scaffold targeting macOS and Windows
 
 The project uses the supplied CMake presets. Replace the preset name with the configuration you need (`debug`/`release`).
 
+For manual generator selection, use VS: `cmake -S . -B build -G "Visual Studio 17 2022" -A x64`, Ninja: `cmake -S . -B build -G Ninja`.
+
 ```bash
 cmake --preset windows-msvc-release   # or macos-xcode-release / macos-xcode-debug / windows-msvc-debug
 cmake --build --preset windows-msvc-release
