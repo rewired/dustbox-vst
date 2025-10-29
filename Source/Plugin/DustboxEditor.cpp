@@ -25,7 +25,7 @@ constexpr float meterSmoothing = 0.35f;
 const std::array<juce::String, 3> noteDivisionLabels {
     juce::String(juce::CharPointer_UTF8("\xC2\xBC")), // ¼
     juce::String(juce::CharPointer_UTF8("\xE2\x85\x9B")), // ⅛
-    juce::String(juce::CharPointer_UTF8("1\xE2\x81\x8416")) // 1⁄16
+    juce::String(juce::CharPointer_UTF8(u8"1\u204416")) // 1⁄16
 };
 } // namespace
 
@@ -189,7 +189,7 @@ void DustboxEditor::initialiseControls()
 
     clipIndicator.setColour(juce::Label::textColourId, juce::Colours::red);
     clipIndicator.setJustificationType(juce::Justification::centredRight);
-    clipIndicator.setFont(juce::Font(14.0f, juce::Font::bold));
+    clipIndicator.setFont(juce::Font(juce::FontOptions(14.0f).withBold(true)));
 }
 
 void DustboxEditor::initialiseAttachments()
@@ -242,7 +242,7 @@ void DustboxEditor::paint(juce::Graphics& g)
 {
     g.fillAll(juce::Colour::fromRGB(24, 24, 24));
     g.setColour(juce::Colours::white);
-    g.setFont(juce::Font(24.0f, juce::Font::bold));
+    g.setFont(juce::Font(juce::FontOptions(24.0f).withBold(true)));
     g.drawText("DUSTBOX", 16, 8, getWidth() - 32, 28, juce::Justification::centred);
 }
 
