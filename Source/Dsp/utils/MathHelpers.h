@@ -24,13 +24,24 @@ inline float clamp(float value, float minValue, float maxValue) noexcept
     return std::fmax(minValue, std::fmin(value, maxValue));
 }
 
-inline void applyEqualPowerMix(float wetAmount, float* drySample, float* wetSample) noexcept
+struct EqualPowerGains
 {
-    const auto dryGain = std::cos(wetAmount * juce::MathConstants<float>::halfPi);
-    const auto wetGain = std::sin(wetAmount * juce::MathConstants<float>::halfPi);
-    const auto dry = *drySample;
-    const auto wet = *wetSample;
-    *drySample = dry * dryGain + wet * wetGain;
+    float dry { 1.0f };
+    float wet { 0.0f };
+};
+
+inline EqualPowerGains equalPowerMixGains(float mix) noexcept
+{
+    const auto clamped = juce::jlimit(0.0f, 1.0f, mix);
+    const auto dry = std::cos(clamped * juce::MathConstants<float>::halfPi);
+    const auto wet = std::sin(clamped * juce::MathConstants<float>::halfPi);
+    return { dry, wet };
+}
+
+inline float softClip(float x) noexcept
+{
+    const auto x3 = x * x * x;
+    return x - (x3 * 0.3333333333f);
 }
 }
 
