@@ -52,11 +52,11 @@ set(_dustbox_character_fn "${_dustbox_juce_root}/modules/juce_core/text/juce_Cha
 _dustbox_apply_patch(
     "${_dustbox_character_fn}"
     "                JUCE_FALLTHROUGH\n            case '+':"
-    "                JUCE_FALLTHROUGH; // fallthrough\n            case '+':")
+    "                JUCE_FALLTHROUGH;\n                // fallthrough\n            case '+':")
 _dustbox_apply_patch(
     "${_dustbox_character_fn}"
     "                    JUCE_FALLTHROUGH\n                case '+':"
-    "                    JUCE_FALLTHROUGH; // fallthrough\n                case '+':")
+    "                    JUCE_FALLTHROUGH;\n                // fallthrough\n                case '+':")
 
 unset(_dustbox_fixed_size_fn)
 unset(_dustbox_refcounted_fn)
