@@ -44,6 +44,28 @@
       }
     },
     {
+      "name": "macos-xcode-debug",
+      "displayName": "macOS Xcode Debug",
+      "generator": "Xcode",
+      "binaryDir": "${sourceDir}/build/macos-xcode-debug",
+      "cacheVariables": {
+        "CMAKE_CONFIGURATION_TYPES": "Debug",
+        "DUSTBOX_ENABLE_WARNINGS": "ON",
+        "DUSTBOX_STRICT_BUILD": "OFF"
+      }
+    },
+    {
+      "name": "macos-xcode-release",
+      "displayName": "macOS Xcode Release",
+      "generator": "Xcode",
+      "binaryDir": "${sourceDir}/build/macos-xcode-release",
+      "cacheVariables": {
+        "CMAKE_CONFIGURATION_TYPES": "Release",
+        "DUSTBOX_ENABLE_WARNINGS": "ON",
+        "DUSTBOX_STRICT_BUILD": "OFF"
+      }
+    },
+    {
       "name": "ci-strict",
       "displayName": "CI Strict Build",
       "inherits": ["windows-msvc-release"],
@@ -64,6 +86,14 @@
     {
       "name": "ninja-release",
       "configurePreset": "ninja-release"
+    },
+    {
+      "name": "macos-xcode-debug",
+      "configurePreset": "macos-xcode-debug"
+    },
+    {
+      "name": "macos-xcode-release",
+      "configurePreset": "macos-xcode-release"
     },
     {
       "name": "ci-strict",

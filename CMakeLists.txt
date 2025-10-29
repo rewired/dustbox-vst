@@ -23,17 +23,21 @@ juce_add_plugin(Dustbox
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
     COPY_PLUGIN_AFTER_BUILD TRUE
-    FORMATS VST3 Standalone
+    FORMATS VST3
     PRODUCT_NAME "Dustbox")
 
 target_sources(Dustbox PRIVATE
-    src/PluginProcessor.cpp
-    src/PluginEditor.cpp)
+    Source/Plugin/DustboxProcessor.cpp
+    Source/Plugin/DustboxEditor.cpp
+    Source/Dsp/modules/TapeModule.cpp
+    Source/Dsp/modules/DirtModule.cpp
+    Source/Dsp/modules/PumpModule.cpp
+    Source/Ui/GenericControls.cpp)
 
 target_compile_features(Dustbox PRIVATE cxx_std_17)
 
 target_include_directories(Dustbox PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    ${CMAKE_CURRENT_SOURCE_DIR}/Source)
 
 target_link_libraries(Dustbox
     PRIVATE
