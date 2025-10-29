@@ -23,6 +23,16 @@ cmake --build --preset windows-msvc-release
 
 VST3 bundles are copied after build to `<build-dir>/out/<Config>/Dustbox.vst3`. Load the plugin in any VST3-compatible host to inspect the scaffolding UI and parameter wiring.
 
+### CMake (Windows 10, VS 2022)
+Use an explicit Visual Studio generator and architecture to avoid platform warnings:
+
+```
+cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release
+```
+
+> If `CMAKE_GENERATOR_PLATFORM` is set in your environment, pass `-G "Visual Studio 17 2022" -A x64` explicitly or unset the variable.
+
 ## Project Highlights
 
 - **Zero-latency** VST3 with realtime-safe audio thread (no allocations, locks, or file I/O in `processBlock`).

@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+- Fixed factory preset creation to use `ValueTree::createCopy` for JUCE 8 const-correct state duplication.
+- Switched editor bold fonts to `FontOptions::withStyleFlags` for JUCE 8 API compatibility and silence MSVC warnings.
 - Adjusted JUCE state serialisation, UTF-8 literals, and font construction for JUCE 8 compatibility and warning-free builds.
 - Added a JUCE patch step during configure to eliminate MSVC static analysis warnings from upstream headers.
 - Updated HostTempo to use juce::AudioPlayHead::getPosition for modern host compatibility.

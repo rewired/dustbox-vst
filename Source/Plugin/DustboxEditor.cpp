@@ -189,7 +189,7 @@ void DustboxEditor::initialiseControls()
 
     clipIndicator.setColour(juce::Label::textColourId, juce::Colours::red);
     clipIndicator.setJustificationType(juce::Justification::centredRight);
-    clipIndicator.setFont(juce::Font(juce::FontOptions(14.0f).withBold(true)));
+    clipIndicator.setFont(juce::Font(juce::FontOptions(14.0f).withStyleFlags(juce::Font::bold)));
 }
 
 void DustboxEditor::initialiseAttachments()
@@ -242,7 +242,7 @@ void DustboxEditor::paint(juce::Graphics& g)
 {
     g.fillAll(juce::Colour::fromRGB(24, 24, 24));
     g.setColour(juce::Colours::white);
-    g.setFont(juce::Font(juce::FontOptions(24.0f).withBold(true)));
+    g.setFont(juce::Font(juce::FontOptions(24.0f).withStyleFlags(juce::Font::bold)));
     g.drawText("DUSTBOX", 16, 8, getWidth() - 32, 28, juce::Justification::centred);
 }
 
