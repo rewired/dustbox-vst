@@ -21,6 +21,11 @@
 #include "HostTempo.h"
 #include "../Dsp/utils/DenormalGuard.h"
 
+#include <array>
+#include <atomic>
+#include <functional>
+#include <vector>
+
 namespace dustbox
 {
 class DustboxEditor;
@@ -52,23 +57,56 @@ public:
     double getTailLengthSeconds() const override { return 0.0; }
 
     //==============================================================================
-    int getNumPrograms() override { return 1; }
-    int getCurrentProgram() override { return 0; }
-    void setCurrentProgram(int) override {}
-    const juce::String getProgramName(int) override { return {}; }
-    void changeProgramName(int, const juce::String&) override {}
+    int getNumPrograms() override;
+    int getCurrentProgram() override;
+    void setCurrentProgram(int) override;
+    const juce::String getProgramName(int) override;
+    void changeProgramName(int, const juce::String&) override;
 
     //==============================================================================
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
 
     juce::AudioProcessorValueTreeState& getValueTreeState() noexcept { return valueTreeState; }
+    const juce::AudioProcessorValueTreeState& getValueTreeState() const noexcept { return valueTreeState; }
+
+    const HostTempo& getHostTempo() const noexcept { return hostTempo; }
+
+    size_t getMeterChannelCount() const noexcept;
+    float getInputPeakLevel(size_t channel) const noexcept;
+    float getInputRmsLevel(size_t channel) const noexcept;
+    bool getInputClipFlag(size_t channel) const noexcept;
+    float getOutputPeakLevel(size_t channel) const noexcept;
+    float getOutputRmsLevel(size_t channel) const noexcept;
+    bool getOutputClipFlag(size_t channel) const noexcept;
 
 private:
+    struct Preset
+    {
+        juce::String name;
+        juce::ValueTree state;
+    };
+
+    struct MeterReadings
+    {
+        std::atomic<float> peak { 0.0f };
+        std::atomic<float> rms { 0.0f };
+        std::atomic<bool> clip { false };
+    };
+
+    static constexpr size_t meterChannelCount = 2;
+
     void updateParameters();
     void applyBypassRamp(juce::AudioBuffer<float>& buffer, int numSamples);
     void addNoisePostPump(juce::AudioBuffer<float>& wetBuffer, int numSamples);
     void addNoisePostMix(juce::AudioBuffer<float>& mixBuffer, int numSamples);
+    void initialiseFactoryPresets();
+    juce::ValueTree createPresetState(const std::function<void(juce::ValueTree&)>& mutator) const;
+    int findPresetIndexMatchingState(const juce::ValueTree& state) const;
+    void publishMeterReadings(const juce::AudioBuffer<float>& buffer,
+                              std::array<MeterReadings, meterChannelCount>& storage,
+                              int numChannels,
+                              int numSamples);
 
     juce::AudioProcessorValueTreeState valueTreeState;
 
@@ -86,6 +124,12 @@ private:
 
     double currentSampleRate { 44100.0 };
     int currentBlockSize { 0 };
+
+    std::vector<Preset> factoryPresets;
+    int currentProgramIndex { 0 };
+
+    std::array<MeterReadings, meterChannelCount> inputMeterValues {};
+    std::array<MeterReadings, meterChannelCount> outputMeterValues {};
 
     struct CachedParameters
     {
