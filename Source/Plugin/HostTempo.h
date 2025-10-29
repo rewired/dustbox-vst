@@ -12,6 +12,8 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
+#include <cmath>
+
 namespace dustbox
 {
 class HostTempo
@@ -43,6 +45,16 @@ public:
                 timeSigDenominator = 4;
             }
 
+            if (const auto ppq = position->getPpqPosition())
+            {
+                ppqPosition = *ppq;
+                hasValidPpq = true;
+            }
+            else
+            {
+                hasValidPpq = false;
+            }
+
             return;
         }
 
@@ -50,6 +62,8 @@ public:
     }
 
     double getBpm() const noexcept { return bpm; }
+
+    bool hasHostPhase() const noexcept { return hasValidPpq; }
 
     double getSamplesPerQuarterNote(double sampleRate) const noexcept
     {
@@ -74,17 +88,46 @@ public:
         return juce::jmax(1.0, getSamplesForNoteValue(sampleRate, noteIndex));
     }
 
+    void advanceFallbackPhase(int numSamples, double sampleRate, int noteIndex) noexcept
+    {
+        if (hasValidPpq)
+            return;
+
+        const auto samplesPerCycle = getSamplesPerCycle(sampleRate, noteIndex);
+        if (samplesPerCycle <= 0.0)
+            return;
+
+        fallbackPhase += static_cast<double>(numSamples) / samplesPerCycle;
+        fallbackPhase -= std::floor(fallbackPhase);
+    }
+
+    double getPhase01(int noteIndex) const noexcept
+    {
+        if (hasValidPpq)
+        {
+            const auto multiplier = noteIndex == 0 ? 1.0 : (noteIndex == 1 ? 2.0 : 4.0);
+            auto cycles = ppqPosition * multiplier;
+            return cycles - std::floor(cycles);
+        }
+
+        return fallbackPhase;
+    }
+
 private:
     void resetToFallback() noexcept
     {
         bpm = fallbackBpm;
         timeSigNumerator = 4;
         timeSigDenominator = 4;
+        hasValidPpq = false;
     }
 
     double bpm { fallbackBpm };
     int timeSigNumerator { 4 };
     int timeSigDenominator { 4 };
+    double ppqPosition { 0.0 };
+    double fallbackPhase { 0.0 };
+    bool hasValidPpq { false };
 
     static constexpr double fallbackBpm = 120.0;
 };
