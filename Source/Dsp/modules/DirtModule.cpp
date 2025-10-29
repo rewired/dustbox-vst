@@ -1,31 +1,41 @@
 /*
   ==============================================================================
   File: DirtModule.cpp
-  Responsibility: Implement scaffold for degradation processing (saturation,
-                  quantisation, downsampling).
-  Assumptions: Real DSP will replace the placeholders for tonal character.
-  TODO: Replace placeholder saturation/quantiser with production algorithms.
+  Responsibility: Implement lo-fi degradation (saturation, bit quantisation,
+                  downsampling) for the Dustbox signal chain.
+  Assumptions: Parameters are refreshed each block. No allocations happen in the
+               realtime path and all processing is in-place.
   ==============================================================================
 */
 
 #include "DirtModule.h"
 
-#include <juce_audio_basics/juce_audio_basics.h>
-#include <cmath>
 #include <algorithm>
+#include <array>
+#include <cmath>
+
+#include <juce_audio_basics/juce_audio_basics.h>
+
+#include "../utils/MathHelpers.h"
 
 namespace dustbox::dsp
 {
+namespace
+{
+constexpr size_t maxSupportedChannels = 16;
+constexpr float saturationFloor = 1.0e-4f;
+}
+
 void DirtModule::prepare(double sampleRate, int samplesPerBlock, int numChannels)
 {
     currentSampleRate = sampleRate;
     preparedBlockSize = samplesPerBlock;
     numChannelsPrepared = numChannels;
 
+    jassert(numChannels <= static_cast<int>(maxSupportedChannels));
+
     downsampleCounters.assign(static_cast<size_t>(numChannels), 0);
     heldSamples.assign(static_cast<size_t>(numChannels), 0.0f);
-
-    juce::ignoreUnused(sampleRate);
 }
 
 void DirtModule::reset()
@@ -44,46 +54,66 @@ void DirtModule::processBlock(juce::AudioBuffer<float>& buffer, int numSamples) 
     jassert(numSamples <= preparedBlockSize);
     const auto numChannels = buffer.getNumChannels();
     jassert(numChannels == numChannelsPrepared);
+    jassert(numChannels <= static_cast<int>(maxSupportedChannels));
 
-    const bool bypassQuantiser = parameters.bitDepth >= 24;
-    const bool bypassDownsample = parameters.sampleRateDiv <= 1;
+    const auto saturationAmount = juce::jlimit(0.0f, 1.0f, parameters.saturationAmount);
+    const auto applySaturation = saturationAmount > saturationFloor;
+    const auto drive = applySaturation ? (1.0f + 10.0f * saturationAmount * saturationAmount) : 1.0f;
+    const auto inverseDrive = 1.0f / drive;
+
+    const auto bitDepth = juce::jlimit(4, 24, parameters.bitDepth);
+    const auto bypassQuantiser = bitDepth >= 24;
+    const auto levelCount = static_cast<float>(std::ldexp(1.0, bitDepth) - 1.0);
+    const auto step = 2.0f / levelCount;
+
+    const auto divider = juce::jmax(1, parameters.sampleRateDiv);
+    const auto bypassDownsample = divider <= 1;
+
+    std::array<float*, maxSupportedChannels> channelPointers {};
+
+    for (int channel = 0; channel < numChannels; ++channel)
+        channelPointers[static_cast<size_t>(channel)] = buffer.getWritePointer(channel);
 
     for (int channel = 0; channel < numChannels; ++channel)
     {
-        auto* data = buffer.getWritePointer(channel);
-        auto counter = downsampleCounters[static_cast<size_t>(channel)];
-        auto held = heldSamples[static_cast<size_t>(channel)];
+        const auto channelIndex = static_cast<size_t>(channel);
+        auto* data = channelPointers[channelIndex];
+        auto counter = downsampleCounters[channelIndex];
+        auto held = heldSamples[channelIndex];
 
-        for (int i = 0; i < numSamples; ++i)
+        for (int sample = 0; sample < numSamples; ++sample)
         {
-            float sampleValue = data[i];
+            auto value = data[sample];
 
-            if (parameters.saturationAmount > 0.0f)
+            if (applySaturation)
             {
-                const float drive = juce::jlimit(1.0f, 10.0f, 1.0f + parameters.saturationAmount * 4.0f);
-                sampleValue = std::tanh(sampleValue * drive);
+                const auto driven = softClip(value * drive);
+                value = driven * inverseDrive;
             }
 
             if (! bypassQuantiser)
             {
-                const float steps = static_cast<float>(1 << juce::jlimit(1, 24, parameters.bitDepth));
-                sampleValue = std::round(sampleValue * steps) / steps;
+                const auto clamped = juce::jlimit(-1.0f, 1.0f, value);
+                value = std::round(clamped / step) * step;
             }
 
             if (! bypassDownsample)
             {
-                if (counter == 0)
-                    held = sampleValue;
+                if (counter <= 0)
+                {
+                    held = value;
+                    counter = divider;
+                }
 
-                sampleValue = held;
-                counter = (counter + 1) % juce::jmax(1, parameters.sampleRateDiv);
+                value = held;
+                --counter;
             }
 
-            data[i] = sampleValue;
+            data[sample] = value;
         }
 
-        downsampleCounters[static_cast<size_t>(channel)] = counter;
-        heldSamples[static_cast<size_t>(channel)] = held;
+        downsampleCounters[channelIndex] = counter;
+        heldSamples[channelIndex] = held;
     }
 }
 } // namespace dustbox::dsp

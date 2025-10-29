@@ -2,8 +2,8 @@
   ==============================================================================
   File: PumpModule.h
   Responsibility: Provide tempo-synchronised gain modulation for Dustbox.
-  Assumptions: Host tempo information is supplied each block via setSync().
-  TODO: Implement final envelope shape tuned for musical feel.
+  Assumptions: Host tempo info is refreshed once per block via setSync().
+  Notes: Envelope shape is branch-light and suitable for realtime use.
   ==============================================================================
 */
 
@@ -26,19 +26,22 @@ public:
     void prepare(double sampleRate, int samplesPerBlock, int numChannels);
     void reset();
     void setParameters(const Parameters& newParams) noexcept;
-    void setSync(double samplesPerCycle, double phaseOffsetSamples) noexcept;
+    void setSync(double samplesPerCycle, float phaseOffsetNormalised) noexcept;
     void processBlock(juce::AudioBuffer<float>& buffer, int numSamples) noexcept;
 
 private:
+    static constexpr size_t maxSupportedChannels = 16;
+
+    Parameters parameters {};
+
     double currentSampleRate { 44100.0 };
     int preparedBlockSize { 0 };
     int numChannelsPrepared { 0 };
 
-    Parameters parameters {};
-
-    double samplesPerCycle { 44100.0 / 2.0 };
-    double phaseOffset { 0.0 };
+    double samplesPerCycle { 44100.0 };
+    double phaseIncrement { 1.0 / 44100.0 };
     double phase { 0.0 };
+    float phaseOffset { 0.0f };
 };
 } // namespace dustbox::dsp
 

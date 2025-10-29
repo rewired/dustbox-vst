@@ -54,6 +54,11 @@ public:
         }
     }
 
+    double getSamplesPerCycle(double sampleRate, int noteIndex) const noexcept
+    {
+        return juce::jmax(1.0, getSamplesForNoteValue(sampleRate, noteIndex));
+    }
+
 private:
     double bpm { fallbackBpm };
     int timeSigNumerator { 4 };

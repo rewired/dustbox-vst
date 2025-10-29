@@ -17,7 +17,6 @@
 #include "../Dsp/modules/DirtModule.h"
 #include "../Dsp/modules/PumpModule.h"
 #include "../Dsp/modules/TapeModule.h"
-#include "../Dsp/routing/ProcessingGraph.h"
 #include "../Dsp/utils/ParameterSmoother.h"
 #include "HostTempo.h"
 #include "../Dsp/utils/DenormalGuard.h"
@@ -68,7 +67,6 @@ public:
 private:
     void updateParameters();
     void applyBypassRamp(juce::AudioBuffer<float>& buffer, int numSamples);
-    void updateTempoInfo();
     void addNoisePostPump(juce::AudioBuffer<float>& wetBuffer, int numSamples);
     void addNoisePostMix(juce::AudioBuffer<float>& mixBuffer, int numSamples);
 
@@ -77,8 +75,6 @@ private:
     dsp::TapeModule tapeModule;
     dsp::DirtModule dirtModule;
     dsp::PumpModule pumpModule;
-    dsp::ProcessingGraph processingGraph;
-
     dsp::ParameterSmoother wetMixSmoother;
     dsp::ParameterSmoother outputGainSmoother;
 

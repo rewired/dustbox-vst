@@ -4,7 +4,8 @@
   Responsibility: Implement the Dustbox AudioProcessor core flow, parameter
                   handling, and module coordination.
   Assumptions: DSP modules provide realtime-safe processBlock implementations.
-  TODO: Fill in DSP algorithms and revisit smoothing timings after listening.
+  Notes: Finalises realtime routing with smoothing, equal-power mixing, and
+         click-free bypass handling.
   ==============================================================================
 */
 
@@ -16,10 +17,18 @@
 
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_core/juce_core.h>
+#include <array>
 #include <cmath>
+
+#include "../Dsp/utils/MathHelpers.h"
 
 namespace dustbox
 {
+
+namespace
+{
+constexpr size_t maxProcessChannels = 16;
+}
 
 DustboxProcessor::DustboxProcessor()
     : juce::AudioProcessor(BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), true)
@@ -54,6 +63,8 @@ void DustboxProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     tapeModule.reset();
     dirtModule.reset();
     pumpModule.reset();
+
+    bypassTransitionActive = false;
 }
 
 void DustboxProcessor::releaseResources()
@@ -103,32 +114,39 @@ void DustboxProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Midi
         return;
 
     hostTempo.updateFromPlayHead(getPlayHead());
-    const auto samplesPerCycle = hostTempo.getSamplesForNoteValue(currentSampleRate, cachedParameters.pumpParams.syncNoteIndex);
-    const auto phaseOffsetSamples = samplesPerCycle * cachedParameters.pumpParams.phaseOffset;
-    pumpModule.setSync(samplesPerCycle, phaseOffsetSamples);
+    const auto samplesPerCycle = hostTempo.getSamplesPerCycle(currentSampleRate, cachedParameters.pumpParams.syncNoteIndex);
+    pumpModule.setSync(samplesPerCycle, cachedParameters.pumpParams.phaseOffset);
 
-    processingGraph.process(buffer, numSamples, tapeModule, dirtModule, pumpModule);
+    tapeModule.processBlock(buffer, numSamples);
+    dirtModule.processBlock(buffer, numSamples);
+    pumpModule.processBlock(buffer, numSamples);
 
     addNoisePostPump(buffer, numSamples);
 
     wetMixSmoother.setTarget(cachedParameters.wetMix);
     outputGainSmoother.setTarget(cachedParameters.outputGain);
 
+    jassert(totalNumInputChannels <= static_cast<int>(maxProcessChannels));
+    std::array<const float*, maxProcessChannels> dryPointers {};
+    std::array<float*, maxProcessChannels> wetPointers {};
+
+    for (int channel = 0; channel < totalNumInputChannels; ++channel)
+    {
+        dryPointers[static_cast<size_t>(channel)] = dryBuffer.getReadPointer(channel);
+        wetPointers[static_cast<size_t>(channel)] = buffer.getWritePointer(channel);
+    }
+
     for (int sample = 0; sample < numSamples; ++sample)
     {
-        const float wetMix = juce::jlimit(0.0f, 1.0f, wetMixSmoother.getNextValue());
-        const float outputGain = outputGainSmoother.getNextValue();
-
-        const float dryGain = std::cos(wetMix * juce::MathConstants<float>::halfPi);
-        const float wetGain = std::sin(wetMix * juce::MathConstants<float>::halfPi);
+        const auto gains = dsp::equalPowerMixGains(wetMixSmoother.getNextValue());
+        const auto outputGain = outputGainSmoother.getNextValue();
 
         for (int channel = 0; channel < totalNumInputChannels; ++channel)
         {
-            const float drySample = dryBuffer.getSample(channel, sample);
-            const float wetSample = buffer.getSample(channel, sample);
-            float mixed = drySample * dryGain + wetSample * wetGain;
-            mixed *= outputGain;
-            buffer.setSample(channel, sample, mixed);
+            const auto channelIndex = static_cast<size_t>(channel);
+            const float drySample = dryPointers[channelIndex][sample];
+            const float wetSample = wetPointers[channelIndex][sample];
+            wetPointers[channelIndex][sample] = (drySample * gains.dry + wetSample * gains.wet) * outputGain;
         }
     }
 
@@ -193,16 +211,32 @@ void DustboxProcessor::updateParameters()
 
 void DustboxProcessor::applyBypassRamp(juce::AudioBuffer<float>& buffer, int numSamples)
 {
+    if (! bypassTransitionActive && ! cachedParameters.hardBypass)
+        return;
+
     const auto numChannels = getTotalNumInputChannels();
+    if (numChannels == 0)
+        return;
+
+    jassert(numChannels <= static_cast<int>(maxProcessChannels));
+    std::array<const float*, maxProcessChannels> dryPointers {};
+    std::array<float*, maxProcessChannels> wetPointers {};
+
+    for (int channel = 0; channel < numChannels; ++channel)
+    {
+        dryPointers[static_cast<size_t>(channel)] = dryBuffer.getReadPointer(channel);
+        wetPointers[static_cast<size_t>(channel)] = buffer.getWritePointer(channel);
+    }
+
     for (int sample = 0; sample < numSamples; ++sample)
     {
         const float bypassValue = bypassSmoother.getNextValue();
         for (int channel = 0; channel < numChannels; ++channel)
         {
-            const float drySample = dryBuffer.getSample(channel, sample);
-            const float wetSample = buffer.getSample(channel, sample);
-            const float blended = drySample * bypassValue + wetSample * (1.0f - bypassValue);
-            buffer.setSample(channel, sample, blended);
+            const auto channelIndex = static_cast<size_t>(channel);
+            const float drySample = dryPointers[channelIndex][sample];
+            auto& wetSample = wetPointers[channelIndex][sample];
+            wetSample = drySample * bypassValue + wetSample * (1.0f - bypassValue);
         }
     }
 
@@ -216,6 +250,7 @@ void DustboxProcessor::addNoisePostPump(juce::AudioBuffer<float>& wetBuffer, int
         return;
 
     const auto& noise = tapeModule.getNoiseBuffer();
+    jassert(noise.getNumSamples() >= numSamples);
     const auto numChannels = wetBuffer.getNumChannels();
     for (int channel = 0; channel < numChannels; ++channel)
         wetBuffer.addFrom(channel, 0, noise, channel, 0, numSamples);
@@ -227,6 +262,7 @@ void DustboxProcessor::addNoisePostMix(juce::AudioBuffer<float>& mixBuffer, int 
         return;
 
     const auto& noise = tapeModule.getNoiseBuffer();
+    jassert(noise.getNumSamples() >= numSamples);
     const auto numChannels = mixBuffer.getNumChannels();
     for (int channel = 0; channel < numChannels; ++channel)
         mixBuffer.addFrom(channel, 0, noise, channel, 0, numSamples);
