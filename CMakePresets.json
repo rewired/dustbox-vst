@@ -1,0 +1,73 @@
+{
+  "version": 5,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 22,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "windows-msvc-debug",
+      "displayName": "Windows MSVC Debug",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/build/windows-msvc-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CONFIGURATION_TYPES": "Debug",
+        "DUSTBOX_ENABLE_WARNINGS": "ON",
+        "DUSTBOX_STRICT_BUILD": "OFF"
+      }
+    },
+    {
+      "name": "windows-msvc-release",
+      "displayName": "Windows MSVC Release",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/build/windows-msvc-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CONFIGURATION_TYPES": "Release",
+        "DUSTBOX_ENABLE_WARNINGS": "ON",
+        "DUSTBOX_STRICT_BUILD": "OFF"
+      }
+    },
+    {
+      "name": "ninja-release",
+      "displayName": "Ninja Release (MSVC)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/ninja-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "cl.exe",
+        "CMAKE_CXX_COMPILER": "cl.exe",
+        "DUSTBOX_ENABLE_WARNINGS": "ON",
+        "DUSTBOX_STRICT_BUILD": "OFF"
+      }
+    },
+    {
+      "name": "ci-strict",
+      "displayName": "CI Strict Build",
+      "inherits": ["windows-msvc-release"],
+      "cacheVariables": {
+        "DUSTBOX_STRICT_BUILD": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "windows-msvc-debug",
+      "configurePreset": "windows-msvc-debug"
+    },
+    {
+      "name": "windows-msvc-release",
+      "configurePreset": "windows-msvc-release"
+    },
+    {
+      "name": "ninja-release",
+      "configurePreset": "ninja-release"
+    },
+    {
+      "name": "ci-strict",
+      "configurePreset": "ci-strict"
+    }
+  ]
+}

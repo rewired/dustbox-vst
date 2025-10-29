@@ -1,0 +1,33 @@
+# Build directories
+/build*/
+/.vs/
+CMakeFiles/
+CMakeCache.txt
+*.sln
+*.vcxproj*
+*.user
+
+# IDE
+*.code-workspace
+.vscode/
+
+# JUCE/General
+*.jucer
+*.DS_Store
+*.swp
+*.swo
+
+# Generated
+*.pdb
+*.idb
+*.ipch
+*.obj
+*.dll
+*.exe
+*.vc.db
+*.VC.db
+*.VC.opendb
+
+# Misc
+.DS_Store
+Thumbs.db
