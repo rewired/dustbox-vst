@@ -5,13 +5,16 @@
                   hiss routing) for the Dustbox signal chain.
   Assumptions: prepare() is called before processBlock and parameters are
                updated from the owning processor.
-  TODO: Implement actual modulated delay, tone shaping, and hiss modelling.
+  Notes: DSP implementation keeps allocations outside the realtime path and
+         remains zero-latency.
   ==============================================================================
 */
 
 #pragma once
 
+#include <juce_core/juce_core.h>
 #include <juce_dsp/juce_dsp.h>
+#include <vector>
 
 #include "../utils/NoiseGenerator.h"
 
@@ -47,16 +50,38 @@ public:
     NoiseRoute getNoiseRoute() const noexcept { return parameters.noiseRoute; }
 
 private:
+    static constexpr float baseDelayMs = 12.0f;
+    static constexpr float maxWowDepthMs = 6.0f;
+    static constexpr float maxFlutterDepthMs = 1.2f;
+    static constexpr float maxDelayMs = baseDelayMs + maxWowDepthMs + maxFlutterDepthMs + 4.0f;
+
+    float computeToneCoefficient(float cutoffHz) const noexcept;
+
     Parameters parameters {};
-    juce::dsp::DelayLine<float> wowDelay { 2048 };
-    juce::dsp::DelayLine<float> flutterDelay { 1024 };
-    juce::dsp::StateVariableTPTFilter<float> toneFilter;
-    NoiseGenerator noiseGenerator {};
+
+    juce::AudioBuffer<float> delayBuffer;
     juce::AudioBuffer<float> noiseBuffer;
 
+    std::vector<int> writePositions;
+    std::vector<float> toneStates;
+    std::vector<NoiseGenerator> noiseGenerators;
+
+    juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> toneCutoff;
+
     double currentSampleRate { 44100.0 };
+    float toneCoefficient { 0.0f };
+    float lastToneCutoffHz { 0.0f };
+
+    float baseDelaySamples { 0.0f };
+    float wowDepthSamplesRange { 0.0f };
+    float flutterDepthSamplesRange { 0.0f };
+
+    int delayBufferSize { 0 };
     int preparedBlockSize { 0 };
     int numChannelsPrepared { 0 };
+
+    float wowPhase { 0.0f };
+    float flutterPhase { 0.0f };
 };
 } // namespace dustbox::dsp
 
