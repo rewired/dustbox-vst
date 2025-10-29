@@ -14,8 +14,8 @@ namespace dustbox
 struct Version
 {
     static constexpr const char* projectName   = "Dustbox";
-    static constexpr const char* companyName   = "Communit Labs";
-    static constexpr const char* companyDomain = "commun.it";
+    static constexpr const char* companyName   = "7OOP3D";
+    static constexpr const char* companyDomain = "7oop3d.com";
     static constexpr int majorVersion          = 0;
     static constexpr int minorVersion          = 1;
     static constexpr int patchVersion          = 0;
