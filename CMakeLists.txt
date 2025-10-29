@@ -7,13 +7,16 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(DUSTBOX_ENABLE_WARNINGS "Enable compiler warnings" ON)
 option(DUSTBOX_STRICT_BUILD "Treat warnings as errors" OFF)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/extern/JUCE/CMakeLists.txt")
     message(STATUS "JUCE submodule not found. Please run 'git submodule update --init --recursive'.")
+else()
+    include(JuceWarningPatches)
 endif()
 
 add_subdirectory(extern/JUCE)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(ToolchainWarnings)
 
 juce_add_plugin(Dustbox
