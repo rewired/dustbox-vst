@@ -446,7 +446,7 @@ void DustboxProcessor::initialiseFactoryPresets()
 
 juce::ValueTree DustboxProcessor::createPresetState(const std::function<void(juce::ValueTree&)>& mutator) const
 {
-    auto state = valueTreeState.copyState();
+    auto state = valueTreeState.state.createCopy();
     mutator(state);
     return state;
 }
