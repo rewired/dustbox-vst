@@ -3,7 +3,7 @@
 ## Project
 
 **Name:** DUSTBOX (working title)
-**Type:** Audio effect plugin (VST3 now, AU later) built with **JUCE** for **Windows/macOS**
+**Type:** Audio effect plugin (VST3 now, AU later) built with **JUCE 8.0.10** for **Windows/macOS**
 
 ## Roles & Ownership
 
