@@ -1,52 +1,38 @@
 # Dustbox
 
-Minimal JUCE-based scaffold for the Dustbox audio plug-in (VST3 + Standalone) targeting Windows 10 / Visual Studio 2022 first, with cross-platform readiness.
+Dustbox is a JUCE-based audio effect plugin scaffold targeting macOS and Windows. The current deliverable builds a zero-latency VST3 that wires an `AudioProcessorValueTreeState` parameter model to three DSP module stubs (Tape, Dirt, Pump) and a minimal grouped UI. No creative DSP is implemented yet; this repository establishes the production-ready structure for further development.
 
-## Prerequisites (Windows 10)
+## Prerequisites
 
-1. **Visual Studio 2022** with the *Desktop development with C++* workload.
-2. **Windows 10 SDK** (installed via the Visual Studio installer).
-3. **CMake 3.22+** (ships with VS2022 or install separately).
-4. Git with submodule support.
+- [CMake 3.22+](https://cmake.org/) with a C++17 toolchain.
+- JUCE as a Git submodule at `extern/JUCE` (`git submodule update --init --recursive`).
+- Platform toolchains:
+  - **Windows:** Visual Studio 2022 (Desktop development with C++) or recent MSVC with the VST3 SDK runtime.
+  - **macOS:** Xcode 14+ with command line tools installed.
 
-## Repository Setup
+## Configure & Build
+
+The project uses the supplied CMake presets. Replace the preset name with the configuration you need (`debug`/`release`).
 
 ```bash
-# Clone the repository
-git clone <repo-url> dustbox
-cd dustbox
-
-# Fetch JUCE as a submodule
-git submodule add https://github.com/juce-framework/JUCE.git extern/JUCE
-git submodule update --init --recursive
-```
-
-> **Note:** JUCE ships with the VST3 SDK integration. By building a VST3 you agree to Steinberg's licensing terms for distribution.
-
-## Configure & Build (Visual Studio 2022)
-
-```powershell
-cmake --preset windows-msvc-release
+cmake --preset windows-msvc-release   # or macos-xcode-release / macos-xcode-debug / windows-msvc-debug
 cmake --build --preset windows-msvc-release
 ```
 
-### Build Outputs
+VST3 bundles are copied after build to `<build-dir>/out/<Config>/Dustbox.vst3`. Load the plugin in any VST3-compatible host to inspect the scaffolding UI and parameter wiring.
 
-* Visual Studio will emit the VST3 bundle under: `build/windows-msvc-release/VST3/Release/Dustbox.vst3`
-* CMake additionally copies the bundle to `build/windows-msvc-release/out/Release/Dustbox.vst3`
-* The standalone executable lives under the Visual Studio configuration directory: `build/windows-msvc-release/Release/Dustbox.exe`
+## Project Highlights
 
-Load the `.vst3` into any VST3-compatible host, or launch the standalone executable directly to verify the skeleton UI.
+- **Zero-latency** VST3 with realtime-safe audio thread (no allocations, locks, or file I/O in `processBlock`).
+- **Parameter model** via `AudioProcessorValueTreeState` with stable IDs and automation-ready ranges.
+- **Module stubs** for Tape, Dirt, and Pump processing, including tempo sync and noise routing placeholders.
+- **Grouped generic UI** built with JUCE controls and attachments—ready for a custom skin later.
 
-## Development Notes
-
-* C++17 is enforced for all targets.
-* Warning levels are high on all toolchains; enable strict (warnings-as-errors) builds with `-D DUSTBOX_STRICT_BUILD=ON` or the `ci-strict` preset.
-* No DSP processing is implemented yet; the processor passes audio through unchanged.
+Refer to the [CHANGELOG](./CHANGELOG.md) and ADRs under [`docs/adr`](./docs/adr) for design notes and future decision tracking.
 
 ## Licensing
 
-* Project source: [MIT License](./LICENSE)
-* JUCE is provided as a git submodule and subject to the [JUCE license](https://juce.com/juce-7-licence).
-* Building VST3 binaries implies acceptance of the Steinberg VST3 license.
+- Project source: [MIT License](./LICENSE)
+- JUCE: subject to the [JUCE 7 license](https://juce.com/juce-7-licence)
+- Building VST3 binaries implies acceptance of Steinberg's VST3 license terms.
 
