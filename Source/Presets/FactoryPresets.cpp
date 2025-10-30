@@ -41,7 +41,7 @@ ParameterSetting makeSetting(const char* paramID, bool value)
 juce::ValueTree makeStateFromMap(const juce::AudioProcessorValueTreeState& apvts,
                                  std::initializer_list<ParameterSetting> settings)
 {
-    auto state = apvts.copyState();
+    auto state = apvts.state.createCopy();
 
     for (const auto& [id, value] : settings)
         state.setProperty(id, value, nullptr);
