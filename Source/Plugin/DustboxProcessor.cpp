@@ -36,6 +36,28 @@ enum class NoiseRouting
     PostTape,
     Parallel
 };
+
+struct ProcessorSuspender
+{
+    explicit ProcessorSuspender(DustboxProcessor& processorIn) : processor(processorIn)
+    {
+        if (! processor.isSuspended())
+        {
+            processor.suspendProcessing(true);
+            suspended = true;
+        }
+    }
+
+    ~ProcessorSuspender()
+    {
+        if (suspended)
+            processor.suspendProcessing(false);
+    }
+
+private:
+    DustboxProcessor& processor;
+    bool suspended { false };
+};
 }
 
 DustboxProcessor::DustboxProcessor()
@@ -230,7 +252,7 @@ void DustboxProcessor::setCurrentProgram(int index)
 
     if (needsUpdate)
     {
-        juce::ScopedAudioProcessorSuspend suspend(*this);
+        ProcessorSuspender suspend(*this);
         valueTreeState.replaceState(preset.state.createCopy());
     }
 
