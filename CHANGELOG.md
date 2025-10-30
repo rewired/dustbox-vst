@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+- Reworked CMake deploy configuration: default install prefix now points to `_deploy`, unsafe in-build installs are auto-corrected, and post-build copying is disabled by default in favour of the `INSTALL` target.
+- Added Windows workflow presets and a `scripts/clean-build.ps1` helper to streamline clean configure/build/install cycles without ballooning the build tree.
 - Fixed factory preset creation to use `ValueTree::createCopy` for JUCE 8 const-correct state duplication.
 - Updated editor bold fonts to `FontOptions::withStyle("Bold")` for JUCE 8 API compatibility and silence MSVC warnings.
 - Adjusted JUCE state serialisation, UTF-8 literals, and font construction for JUCE 8 compatibility and warning-free builds.

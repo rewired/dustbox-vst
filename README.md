@@ -2,6 +2,12 @@
 
 Dustbox is a JUCE-based audio effect plugin scaffold targeting macOS and Windows. The current deliverable builds a zero-latency VST3 that wires an `AudioProcessorValueTreeState` parameter model to three DSP module stubs (Tape, Dirt, Pump) and a minimal grouped UI. No creative DSP is implemented yet; this repository establishes the production-ready structure for further development.
 
+### What is Dustbox?
+
+- **Creative lo-fi coloration toolkit** focused on tape wobble (AGE), digital grit (DIRT), and tempo-synced pumping (PUMP).
+- **JUCE 8 scaffold** with realtime-safe processor flow, APVTS parameter layout, and grouped generic UI ready for skinning.
+- **Cross-platform VST3 project** for Windows and macOS today, with AU support planned once DSP is implemented.
+
 ## Prerequisites
 
 - [CMake 3.22+](https://cmake.org/) with a C++17 toolchain.
@@ -12,26 +18,35 @@ Dustbox is a JUCE-based audio effect plugin scaffold targeting macOS and Windows
 
 ## Configure & Build
 
-The project uses the supplied CMake presets. Replace the preset name with the configuration you need (`debug`/`release`).
+The project ships with CMake presets for Visual Studio, Xcode, and Ninja. Builds deploy via the standard `INSTALL` target into
+`_deploy/VST3/<Config>/Dustbox.vst3`, keeping large bundles outside of the build tree. A pair of workflow presets (`windows-msvc-*-install`)
+drive the configure → build → install sequence in one command if desired.
+
+```powershell
+# Debug example on Windows
+cmake --preset windows-msvc-debug
+cmake --build --preset windows-msvc-debug --config Debug --target INSTALL
+
+# Release build
+cmake --preset windows-msvc-release
+cmake --build --preset windows-msvc-release --config Release --target INSTALL
+```
 
 For manual generator selection, use VS: `cmake -S . -B build -G "Visual Studio 17 2022" -A x64`, Ninja: `cmake -S . -B build -G Ninja`.
-
-```bash
-cmake --preset windows-msvc-release   # or macos-xcode-release / macos-xcode-debug / windows-msvc-debug
-cmake --build --preset windows-msvc-release
-```
-
-VST3 bundles are copied after build to `<build-dir>/out/<Config>/Dustbox.vst3`. Load the plugin in any VST3-compatible host to inspect the scaffolding UI and parameter wiring.
-
-### CMake (Windows 10, VS 2022)
-Use an explicit Visual Studio generator and architecture to avoid platform warnings:
+After generating a Visual Studio project manually, build and deploy with:
 
 ```
-cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
-cmake --build build --config Release
+cmake --build build --config Release --target INSTALL
 ```
 
-> If `CMAKE_GENERATOR_PLATFORM` is set in your environment, pass `-G "Visual Studio 17 2022" -A x64` explicitly or unset the variable.
+> The configure step guards against unsafe install prefixes. If `CMAKE_INSTALL_PREFIX` resolves inside the build tree it is overridden to
+> `${CMAKE_SOURCE_DIR}/_deploy` automatically and a warning is printed.
+
+### Troubleshooting & Clean Builds
+
+- If Visual Studio reports perpetual rebuilds or disk usage spikes, delete the `build/` folder(s) and `_deploy/`, or run
+  `scripts/clean-build.ps1` (PowerShell) to remove them and perform a fresh Debug configure/build/install cycle.
+- The optional `DUSTBOX_ENABLE_POST_BUILD_DEPLOY` toggle is OFF by default; rely on `--target INSTALL` for repeatable deployments.
 
 ## Project Highlights
 
