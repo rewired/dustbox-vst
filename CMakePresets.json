@@ -11,9 +11,8 @@
       "displayName": "Windows MSVC Debug",
       "generator": "Visual Studio 17 2022",
       "binaryDir": "${sourceDir}/build/windows-msvc-debug",
+      "description": "Generate Visual Studio solutions. Build then run the INSTALL target to deploy into _deploy/VST3.",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_CONFIGURATION_TYPES": "Debug",
         "DUSTBOX_ENABLE_WARNINGS": "ON",
         "DUSTBOX_STRICT_BUILD": "OFF"
       }
@@ -23,9 +22,8 @@
       "displayName": "Windows MSVC Release",
       "generator": "Visual Studio 17 2022",
       "binaryDir": "${sourceDir}/build/windows-msvc-release",
+      "description": "Release-oriented Visual Studio generator. Use --target INSTALL for deployment.",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_CONFIGURATION_TYPES": "Release",
         "DUSTBOX_ENABLE_WARNINGS": "ON",
         "DUSTBOX_STRICT_BUILD": "OFF"
       }
@@ -48,8 +46,8 @@
       "displayName": "macOS Xcode Debug",
       "generator": "Xcode",
       "binaryDir": "${sourceDir}/build/macos-xcode-debug",
+      "description": "macOS Xcode (Debug). Build the INSTALL target to populate _deploy/VST3.",
       "cacheVariables": {
-        "CMAKE_CONFIGURATION_TYPES": "Debug",
         "DUSTBOX_ENABLE_WARNINGS": "ON",
         "DUSTBOX_STRICT_BUILD": "OFF"
       }
@@ -59,8 +57,8 @@
       "displayName": "macOS Xcode Release",
       "generator": "Xcode",
       "binaryDir": "${sourceDir}/build/macos-xcode-release",
+      "description": "macOS Xcode (Release). Use INSTALL target for deployment.",
       "cacheVariables": {
-        "CMAKE_CONFIGURATION_TYPES": "Release",
         "DUSTBOX_ENABLE_WARNINGS": "ON",
         "DUSTBOX_STRICT_BUILD": "OFF"
       }
@@ -77,11 +75,15 @@
   "buildPresets": [
     {
       "name": "windows-msvc-debug",
-      "configurePreset": "windows-msvc-debug"
+      "configurePreset": "windows-msvc-debug",
+      "configuration": "Debug",
+      "description": "Build Dustbox (Debug). Run again with --target INSTALL to deploy."
     },
     {
       "name": "windows-msvc-release",
-      "configurePreset": "windows-msvc-release"
+      "configurePreset": "windows-msvc-release",
+      "configuration": "Release",
+      "description": "Build Dustbox (Release). Combine with --target INSTALL for deployment."
     },
     {
       "name": "ninja-release",
@@ -89,15 +91,55 @@
     },
     {
       "name": "macos-xcode-debug",
-      "configurePreset": "macos-xcode-debug"
+      "configurePreset": "macos-xcode-debug",
+      "configuration": "Debug"
     },
     {
       "name": "macos-xcode-release",
-      "configurePreset": "macos-xcode-release"
+      "configurePreset": "macos-xcode-release",
+      "configuration": "Release"
     },
     {
       "name": "ci-strict",
       "configurePreset": "ci-strict"
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "windows-msvc-debug-install",
+      "displayName": "Windows MSVC Debug (configure, build, install)",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "windows-msvc-debug"
+        },
+        {
+          "type": "build",
+          "name": "windows-msvc-debug",
+          "configuration": "Debug",
+          "targets": [
+            "INSTALL"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "windows-msvc-release-install",
+      "displayName": "Windows MSVC Release (configure, build, install)",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "windows-msvc-release"
+        },
+        {
+          "type": "build",
+          "name": "windows-msvc-release",
+          "configuration": "Release",
+          "targets": [
+            "INSTALL"
+          ]
+        }
+      ]
     }
   ]
 }

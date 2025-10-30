@@ -70,15 +70,9 @@ endif()
 
 # --- Deploy & install configuration ---------------------------------------------------------
 
-option(DUSTBOX_ENABLE_POST_BUILD_DEPLOY "Copy the built VST3 bundle into the deploy directory after each build" ON)
+option(DUSTBOX_ENABLE_POST_BUILD_DEPLOY "Copy the built VST3 bundle into the deploy directory after each build" OFF)
 
-set(DUSTBOX_DEPLOY_DIR "${CMAKE_BINARY_DIR}/deploy/$<CONFIG>")
-set(DUSTBOX_VST3_BUNDLE_NAME "${TARGET_NAME}.vst3")
-set(DUSTBOX_VST3_BUNDLE_SRC "$<TARGET_BUNDLE_DIR:${TARGET_NAME}>")
-set(DUSTBOX_VST3_DEPLOY_DST "${DUSTBOX_DEPLOY_DIR}/${DUSTBOX_VST3_BUNDLE_NAME}")
-
-message(STATUS "Dustbox VST3 bundle source : ${DUSTBOX_VST3_BUNDLE_SRC}")
-message(STATUS "Dustbox deploy destination: ${DUSTBOX_VST3_DEPLOY_DST}")
+set(DUSTBOX_DEFAULT_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/_deploy")
 
 function(dustbox_normalize_path out_path in_path)
     if("${in_path}" STREQUAL "")
@@ -101,44 +95,63 @@ function(dustbox_normalize_path out_path in_path)
     set(${out_path} "${_rp}" PARENT_SCOPE)
 endfunction()
 
-function(dustbox_assert_not_subpath child_path parent_path)
+function(dustbox_path_is_within result child_path parent_path)
     dustbox_normalize_path(_child "${child_path}")
     dustbox_normalize_path(_parent "${parent_path}")
 
-    if("${_child}" STREQUAL "" OR "${_parent}" STREQUAL "")
-        return()
-    endif()
+    set(_is_within FALSE)
 
-    string(LENGTH "${_parent}" _parent_len)
-    string(LENGTH "${_child}" _child_len)
+    if(NOT "${_child}" STREQUAL "" AND NOT "${_parent}" STREQUAL "")
+        if(_child STREQUAL "${_parent}")
+            set(_is_within TRUE)
+        else()
+            string(LENGTH "${_parent}" _parent_len)
+            string(LENGTH "${_child}" _child_len)
 
-    if(_parent_len EQUAL 0 OR _child_len EQUAL 0)
-        return()
-    endif()
-
-    if(_child_len LESS _parent_len)
-        return()
-    endif()
-
-    string(SUBSTRING "${_child}" 0 ${_parent_len} _child_prefix)
-
-    if(NOT _child_prefix STREQUAL "${_parent}")
-        return()
-    endif()
-
-    if(_child STREQUAL "${_parent}")
-        message(FATAL_ERROR
-            "Unsafe deploy detected: destination '${child_path}' matches source '${parent_path}'.")
-    endif()
-
-    if(_child_len GREATER _parent_len)
-        string(SUBSTRING "${_child}" ${_parent_len} 1 _next_char)
-        if(_next_char STREQUAL "/" OR _next_char STREQUAL "\\")
-            message(FATAL_ERROR
-                "Unsafe deploy detected: destination '${child_path}' resides inside source '${parent_path}'.")
+            if(_child_len GREATER _parent_len)
+                string(SUBSTRING "${_child}" 0 ${_parent_len} _child_prefix)
+                if(_child_prefix STREQUAL "${_parent}")
+                    string(SUBSTRING "${_child}" ${_parent_len} 1 _next_char)
+                    if(_next_char STREQUAL "/" OR _next_char STREQUAL "\\")
+                        set(_is_within TRUE)
+                    endif()
+                endif()
+            endif()
         endif()
     endif()
+
+    set(${result} ${_is_within} PARENT_SCOPE)
 endfunction()
+
+function(dustbox_assert_not_subpath child_path parent_path)
+    dustbox_path_is_within(_is_within "${child_path}" "${parent_path}")
+
+    if(_is_within)
+        message(FATAL_ERROR
+            "Unsafe deploy detected: destination '${child_path}' resides within source '${parent_path}'.")
+    endif()
+endfunction()
+
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${DUSTBOX_DEFAULT_INSTALL_PREFIX}" CACHE PATH "Install destination prefix" FORCE)
+endif()
+
+# Ensure installations never land inside the active build tree.
+dustbox_path_is_within(_install_inside_binary "${CMAKE_INSTALL_PREFIX}" "${CMAKE_BINARY_DIR}")
+if(_install_inside_binary)
+    message(WARNING
+        "Install prefix '${CMAKE_INSTALL_PREFIX}' resolved inside the build tree. Overriding to '${DUSTBOX_DEFAULT_INSTALL_PREFIX}'.")
+    set(CMAKE_INSTALL_PREFIX "${DUSTBOX_DEFAULT_INSTALL_PREFIX}" CACHE PATH "Install destination prefix" FORCE)
+endif()
+
+set(DUSTBOX_VST3_BUNDLE_NAME "${TARGET_NAME}.vst3")
+set(DUSTBOX_VST3_BUNDLE_SRC "$<TARGET_BUNDLE_DIR:${TARGET_NAME}>")
+set(DUSTBOX_DEPLOY_DIR "${CMAKE_INSTALL_PREFIX}/VST3/$<CONFIG>")
+set(DUSTBOX_VST3_DEPLOY_DST "${DUSTBOX_DEPLOY_DIR}/${DUSTBOX_VST3_BUNDLE_NAME}")
+
+message(STATUS "Dustbox install prefix : ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "Dustbox VST3 bundle src: ${DUSTBOX_VST3_BUNDLE_SRC}")
+message(STATUS "Dustbox deploy destination: ${DUSTBOX_VST3_DEPLOY_DST}")
 
 if(NOT CMAKE_CONFIGURATION_TYPES)
     set(_dustbox_preflight_dst "${DUSTBOX_VST3_DEPLOY_DST}")
@@ -152,9 +165,10 @@ if(NOT CMAKE_CONFIGURATION_TYPES)
     endif()
 endif()
 
-file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/cmake")
-set(_dustbox_copy_script "${CMAKE_CURRENT_BINARY_DIR}/cmake/dustbox_copy_vst3.cmake")
-set(_dustbox_copy_script_template [=[
+if(DUSTBOX_ENABLE_POST_BUILD_DEPLOY)
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/cmake")
+    set(_dustbox_copy_script "${CMAKE_CURRENT_BINARY_DIR}/cmake/dustbox_copy_vst3.cmake")
+    set(_dustbox_copy_script_template [=[
 cmake_minimum_required(VERSION 3.20)
 
 function(_dustbox_normalize out_path in_path)
@@ -222,25 +236,20 @@ if(NOT _copy_result EQUAL 0)
     message(FATAL_ERROR "[Deploy] Copy failed with code ${_copy_result}")
 endif()
 ]=])
-string(CONFIGURE "${_dustbox_copy_script_template}" _dustbox_copy_script_configured @ONLY)
-file(WRITE "${_dustbox_copy_script}" "${_dustbox_copy_script_configured}")
+    string(CONFIGURE "${_dustbox_copy_script_template}" _dustbox_copy_script_configured @ONLY)
+    file(WRITE "${_dustbox_copy_script}" "${_dustbox_copy_script_configured}")
 
-if(DUSTBOX_ENABLE_POST_BUILD_DEPLOY)
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
         COMMAND "${CMAKE_COMMAND}" -Dsrc="$<TARGET_BUNDLE_DIR:${TARGET_NAME}>" -Ddst="${DUSTBOX_VST3_DEPLOY_DST}" -P "${_dustbox_copy_script}"
         VERBATIM
         COMMENT "Deploying ${DUSTBOX_VST3_BUNDLE_NAME} to ${DUSTBOX_DEPLOY_DIR}")
     message(STATUS "Post-build deploy enabled. Safe copy target: ${DUSTBOX_VST3_DEPLOY_DST}")
 else()
-    message(STATUS "Post-build deploy disabled. Use 'cmake --install <build-dir> --config <cfg>' to deploy.")
-endif()
-
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/deploy" CACHE PATH "Install destination prefix" FORCE)
+    message(STATUS "Post-build deploy disabled. Use 'cmake --build <build-dir> --config <cfg> --target INSTALL' to deploy.")
 endif()
 
 install(TARGETS ${TARGET_NAME}
     BUNDLE  DESTINATION "VST3/$<CONFIG>"
     RUNTIME DESTINATION "VST3/$<CONFIG>")
 
-message(STATUS "Install command: cmake --install <build-dir> --config Debug|Release")
+message(STATUS "Install command: cmake --build <build-dir> --config Debug|Release --target INSTALL")
