@@ -553,5 +553,10 @@ bool DustboxProcessor::getOutputClipFlag(size_t channel) const noexcept
 
     return outputMeterValues[channel].clip.load(std::memory_order_relaxed);
 }
+} // namespace dustbox
+
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
+{
+    return new dustbox::DustboxProcessor();
 }
 
