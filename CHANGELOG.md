@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+- Raised the CMake preset schema to v6 and fixed workflow presets to stay compatible with CMake 3.27 while retaining INSTALL automation.
 - Reworked CMake deploy configuration: default install prefix now points to `_deploy`, unsafe in-build installs are auto-corrected, and post-build copying is disabled by default in favour of the `INSTALL` target.
 - Added Windows workflow presets and a `scripts/clean-build.ps1` helper to streamline clean configure/build/install cycles without ballooning the build tree.
 - Fixed factory preset creation to use `ValueTree::createCopy` for JUCE 8 const-correct state duplication.
