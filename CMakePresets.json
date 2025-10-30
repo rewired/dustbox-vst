@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 6,
   "cmakeMinimumRequired": {
     "major": 3,
     "minor": 22,
@@ -86,6 +86,24 @@
       "description": "Build Dustbox (Release). Combine with --target INSTALL for deployment."
     },
     {
+      "name": "windows-msvc-debug-install",
+      "configurePreset": "windows-msvc-debug",
+      "configuration": "Debug",
+      "description": "Run INSTALL target after a debug build.",
+      "targets": [
+        "INSTALL"
+      ]
+    },
+    {
+      "name": "windows-msvc-release-install",
+      "configurePreset": "windows-msvc-release",
+      "configuration": "Release",
+      "description": "Run INSTALL target after a release build.",
+      "targets": [
+        "INSTALL"
+      ]
+    },
+    {
       "name": "ninja-release",
       "configurePreset": "ninja-release"
     },
@@ -115,11 +133,7 @@
         },
         {
           "type": "build",
-          "name": "windows-msvc-debug",
-          "configuration": "Debug",
-          "targets": [
-            "INSTALL"
-          ]
+          "name": "windows-msvc-debug-install"
         }
       ]
     },
@@ -133,11 +147,7 @@
         },
         {
           "type": "build",
-          "name": "windows-msvc-release",
-          "configuration": "Release",
-          "targets": [
-            "INSTALL"
-          ]
+          "name": "windows-msvc-release-install"
         }
       ]
     }
