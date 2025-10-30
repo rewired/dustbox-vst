@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+- Added five deterministic factory presets (Subtle Glue, Lo-Fi Hiss, Chorus Pump, Warm Crunch, Noisy Parallel) exposed via the
+  AudioProcessor program interface with APVTS snapshot recall.
 - Ensured post-build deploy commands set `CMAKE_GENERATOR` alongside `CMAKE_GENERATOR_PLATFORM` so Visual Studio builds no longer emit spurious generator warnings.
 - Added a `noiseRouting` choice parameter with pre/post/parallel options, routed through a dedicated noise module and exposed in the generic UI for automation-safe state recall.
 - Raised the CMake preset schema to v6 and fixed workflow presets to stay compatible with CMake 3.27 while retaining INSTALL automation.

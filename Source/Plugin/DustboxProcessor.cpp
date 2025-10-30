@@ -225,12 +225,20 @@ void DustboxProcessor::setCurrentProgram(int index)
         return;
 
     const int clamped = juce::jlimit(0, getNumPrograms() - 1, index);
-    if (clamped == currentProgramIndex)
-        return;
-
     const auto& preset = factoryPresets[static_cast<size_t>(clamped)];
-    valueTreeState.replaceState(preset.state.createCopy());
+    const bool needsUpdate = ! preset.state.isEquivalentTo(valueTreeState.state);
+
+    if (needsUpdate)
+    {
+        juce::ScopedAudioProcessorSuspend suspend(*this);
+        valueTreeState.replaceState(preset.state.createCopy());
+    }
+
     currentProgramIndex = clamped;
+
+    if (needsUpdate)
+        updateParameters();
+
     updateHostDisplay();
 }
 
@@ -242,12 +250,9 @@ const juce::String DustboxProcessor::getProgramName(int index)
     return factoryPresets[static_cast<size_t>(index)].name;
 }
 
-void DustboxProcessor::changeProgramName(int index, const juce::String& newName)
+void DustboxProcessor::changeProgramName(int, const juce::String&)
 {
-    if (index < 0 || index >= getNumPrograms() || factoryPresets.empty())
-        return;
-
-    factoryPresets[static_cast<size_t>(index)].name = newName;
+    // Factory presets are immutable; hosts may request a rename but we ignore it.
 }
 
 void DustboxProcessor::getStateInformation(juce::MemoryBlock& destData)
@@ -350,118 +355,8 @@ void DustboxProcessor::applyBypassRamp(juce::AudioBuffer<float>& buffer, int num
 
 void DustboxProcessor::initialiseFactoryPresets()
 {
-    using namespace params::ids;
-
-    factoryPresets.clear();
-    factoryPresets.reserve(5);
-
-    auto addPreset = [this](juce::String name, const std::function<void(juce::ValueTree&)>& mutator)
-    {
-        factoryPresets.push_back({ std::move(name), createPresetState(mutator) });
-    };
-
-    auto setParam = [](juce::ValueTree& state, const char* paramID, auto value)
-    {
-        state.setProperty(juce::Identifier(paramID), value, nullptr);
-    };
-
-    addPreset("Subtle Tape Glue", [setParam](juce::ValueTree& state)
-    {
-        setParam(state, tapeWowDepth, 0.10f);
-        setParam(state, tapeWowRateHz, 0.50f);
-        setParam(state, tapeFlutterDepth, 0.05f);
-        setParam(state, tapeToneLowpassHz, 14000.0f);
-        setParam(state, tapeNoiseLevelDb, -48.0f);
-        setParam(state, noiseRouting, 1);
-        setParam(state, dirtSaturationAmt, 0.0f);
-        setParam(state, dirtBitDepthBits, 24);
-        setParam(state, dirtSampleRateDiv, 1);
-        setParam(state, pumpAmount, 0.0f);
-        setParam(state, pumpSyncNote, 1);
-        setParam(state, pumpPhase, 0.0f);
-        setParam(state, mixWet, 0.25f);
-        setParam(state, outputGainDb, 0.0f);
-        setParam(state, hardBypass, false);
-    });
-
-    addPreset("Lo-Fi Sampler", [setParam](juce::ValueTree& state)
-    {
-        setParam(state, tapeWowDepth, 0.08f);
-        setParam(state, tapeWowRateHz, 0.80f);
-        setParam(state, tapeFlutterDepth, 0.04f);
-        setParam(state, tapeToneLowpassHz, 9500.0f);
-        setParam(state, noiseRouting, 1);
-        setParam(state, dirtSaturationAmt, 0.5f);
-        setParam(state, dirtBitDepthBits, 8);
-        setParam(state, dirtSampleRateDiv, 8);
-        setParam(state, pumpAmount, 0.0f);
-        setParam(state, pumpSyncNote, 1);
-        setParam(state, pumpPhase, 0.0f);
-        setParam(state, mixWet, 0.6f);
-        setParam(state, outputGainDb, -1.0f);
-        setParam(state, hardBypass, false);
-    });
-
-    addPreset("Side-Chain Duck", [setParam](juce::ValueTree& state)
-    {
-        setParam(state, tapeWowDepth, 0.12f);
-        setParam(state, tapeWowRateHz, 0.60f);
-        setParam(state, tapeFlutterDepth, 0.06f);
-        setParam(state, dirtSaturationAmt, 0.2f);
-        setParam(state, dirtBitDepthBits, 24);
-        setParam(state, dirtSampleRateDiv, 1);
-        setParam(state, pumpAmount, 0.6f);
-        setParam(state, pumpSyncNote, 1);
-        setParam(state, pumpPhase, 0.0f);
-        setParam(state, mixWet, 1.0f);
-        setParam(state, outputGainDb, 0.0f);
-        setParam(state, hardBypass, false);
-        setParam(state, noiseRouting, 1);
-    });
-
-    addPreset("Noisy VHS", [setParam](juce::ValueTree& state)
-    {
-        setParam(state, tapeWowDepth, 0.25f);
-        setParam(state, tapeWowRateHz, 0.50f);
-        setParam(state, tapeFlutterDepth, 0.18f);
-        setParam(state, tapeToneLowpassHz, 7000.0f);
-        setParam(state, tapeNoiseLevelDb, -36.0f);
-        setParam(state, noiseRouting, 2);
-        setParam(state, dirtSaturationAmt, 0.25f);
-        setParam(state, dirtBitDepthBits, 16);
-        setParam(state, dirtSampleRateDiv, 2);
-        setParam(state, pumpAmount, 0.2f);
-        setParam(state, pumpSyncNote, 1);
-        setParam(state, pumpPhase, 0.15f);
-        setParam(state, mixWet, 0.7f);
-        setParam(state, outputGainDb, -1.5f);
-        setParam(state, hardBypass, false);
-    });
-
-    addPreset("Chorus Crunch", [setParam](juce::ValueTree& state)
-    {
-        setParam(state, tapeWowDepth, 0.32f);
-        setParam(state, tapeWowRateHz, 1.20f);
-        setParam(state, tapeFlutterDepth, 0.24f);
-        setParam(state, tapeToneLowpassHz, 11000.0f);
-        setParam(state, dirtSaturationAmt, 0.4f);
-        setParam(state, dirtBitDepthBits, 12);
-        setParam(state, dirtSampleRateDiv, 2);
-        setParam(state, pumpAmount, 0.35f);
-        setParam(state, pumpSyncNote, 2);
-        setParam(state, pumpPhase, 0.25f);
-        setParam(state, mixWet, 0.5f);
-        setParam(state, outputGainDb, 0.0f);
-        setParam(state, hardBypass, false);
-        setParam(state, noiseRouting, 1);
-    });
-}
-
-juce::ValueTree DustboxProcessor::createPresetState(const std::function<void(juce::ValueTree&)>& mutator) const
-{
-    auto state = valueTreeState.state.createCopy();
-    mutator(state);
-    return state;
+    factoryPresets = presets::createFactoryPresets(valueTreeState);
+    currentProgramIndex = factoryPresets.empty() ? 0 : juce::jlimit(0, getNumPrograms() - 1, currentProgramIndex);
 }
 
 int DustboxProcessor::findPresetIndexMatchingState(const juce::ValueTree& state) const

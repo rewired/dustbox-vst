@@ -34,6 +34,7 @@ juce_add_plugin(${TARGET_NAME}
 target_sources(${TARGET_NAME} PRIVATE
     Source/Plugin/DustboxProcessor.cpp
     Source/Plugin/DustboxEditor.cpp
+    Source/Presets/FactoryPresets.cpp
     Source/Dsp/modules/NoiseModule.cpp
     Source/Dsp/modules/TapeModule.cpp
     Source/Dsp/modules/DirtModule.cpp
