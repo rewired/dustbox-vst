@@ -19,12 +19,12 @@
 #include "../Dsp/modules/PumpModule.h"
 #include "../Dsp/modules/TapeModule.h"
 #include "../Dsp/utils/ParameterSmoother.h"
+#include "../Presets/FactoryPresets.h"
 #include "HostTempo.h"
 #include "../Dsp/utils/DenormalGuard.h"
 
 #include <array>
 #include <atomic>
-#include <functional>
 #include <vector>
 
 namespace dustbox
@@ -82,12 +82,6 @@ public:
     bool getOutputClipFlag(size_t channel) const noexcept;
 
 private:
-    struct Preset
-    {
-        juce::String name;
-        juce::ValueTree state;
-    };
-
     struct MeterReadings
     {
         std::atomic<float> peak { 0.0f };
@@ -100,7 +94,6 @@ private:
     void updateParameters();
     void applyBypassRamp(juce::AudioBuffer<float>& buffer, int numSamples);
     void initialiseFactoryPresets();
-    juce::ValueTree createPresetState(const std::function<void(juce::ValueTree&)>& mutator) const;
     int findPresetIndexMatchingState(const juce::ValueTree& state) const;
     void publishMeterReadings(const juce::AudioBuffer<float>& buffer,
                               std::array<MeterReadings, meterChannelCount>& storage,
@@ -125,7 +118,7 @@ private:
     double currentSampleRate { 44100.0 };
     int currentBlockSize { 0 };
 
-    std::vector<Preset> factoryPresets;
+    std::vector<presets::FactoryPreset> factoryPresets;
     int currentProgramIndex { 0 };
 
     std::array<MeterReadings, meterChannelCount> inputMeterValues {};
