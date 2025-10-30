@@ -15,6 +15,7 @@
 #include "../Core/BuildConfig.h"
 #include "../Core/Version.h"
 #include "../Dsp/modules/DirtModule.h"
+#include "../Dsp/modules/NoiseModule.h"
 #include "../Dsp/modules/PumpModule.h"
 #include "../Dsp/modules/TapeModule.h"
 #include "../Dsp/utils/ParameterSmoother.h"
@@ -98,8 +99,6 @@ private:
 
     void updateParameters();
     void applyBypassRamp(juce::AudioBuffer<float>& buffer, int numSamples);
-    void addNoisePostPump(juce::AudioBuffer<float>& wetBuffer, int numSamples);
-    void addNoisePostMix(juce::AudioBuffer<float>& mixBuffer, int numSamples);
     void initialiseFactoryPresets();
     juce::ValueTree createPresetState(const std::function<void(juce::ValueTree&)>& mutator) const;
     int findPresetIndexMatchingState(const juce::ValueTree& state) const;
@@ -111,6 +110,7 @@ private:
     juce::AudioProcessorValueTreeState valueTreeState;
 
     dsp::TapeModule tapeModule;
+    dsp::NoiseModule noiseModule;
     dsp::DirtModule dirtModule;
     dsp::PumpModule pumpModule;
     dsp::ParameterSmoother wetMixSmoother;
@@ -136,6 +136,8 @@ private:
         dsp::TapeModule::Parameters tapeParams;
         dsp::DirtModule::Parameters dirtParams;
         dsp::PumpModule::Parameters pumpParams;
+        dsp::NoiseModule::Parameters noiseParams;
+        int noiseRoutingIndex { 1 };
         float wetMix { 0.5f };
         float outputGain { 1.0f };
         bool hardBypass { false };

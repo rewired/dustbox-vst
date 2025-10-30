@@ -41,7 +41,7 @@ DustboxEditor::DustboxEditor(DustboxProcessor& p)
     , tapeFlutterDepth("Flutter")
     , tapeToneLowpass("Tone")
     , tapeNoiseLevel("Noise")
-    , tapeNoiseRoute("Noise Route")
+    , noiseRouting("Routing")
     , dirtSaturation("Saturation")
     , dirtBitDepth("Bit Depth")
     , dirtSampleRateDiv("Rate Div")
@@ -62,7 +62,7 @@ DustboxEditor::DustboxEditor(DustboxProcessor& p)
     tapeGroup.addAndMakeVisible(tapeFlutterDepth);
     tapeGroup.addAndMakeVisible(tapeToneLowpass);
     tapeGroup.addAndMakeVisible(tapeNoiseLevel);
-    tapeGroup.addAndMakeVisible(tapeNoiseRoute);
+    tapeGroup.addAndMakeVisible(noiseRouting);
 
     addAndMakeVisible(dirtGroup);
     dirtGroup.addAndMakeVisible(dirtSaturation);
@@ -153,10 +153,10 @@ void DustboxEditor::initialiseControls()
     output.setNumDecimalPlacesToDisplay(1);
     output.setTextValueSuffix(" dB");
 
-    auto& noiseRouteCombo = tapeNoiseRoute.getComboBox();
-    noiseRouteCombo.addItem("Wet Pre Pump", 1);
-    noiseRouteCombo.addItem("Wet Post Pump", 2);
-    noiseRouteCombo.addItem("Post Mix", 3);
+    auto& noiseRoutingCombo = noiseRouting.getComboBox();
+    noiseRoutingCombo.addItem("Pre Tape", 1);
+    noiseRoutingCombo.addItem("Post Tape", 2);
+    noiseRoutingCombo.addItem("Parallel", 3);
 
     auto& pumpSyncCombo = pumpSyncNote.getComboBox();
     pumpSyncCombo.addItem(noteDivisionLabels[0], 1);
@@ -201,7 +201,7 @@ void DustboxEditor::initialiseAttachments()
     tapeFlutterAttachment = std::make_unique<SliderAttachment>(state, params::ids::tapeFlutterDepth, tapeFlutterDepth.getSlider());
     tapeToneAttachment = std::make_unique<SliderAttachment>(state, params::ids::tapeToneLowpassHz, tapeToneLowpass.getSlider());
     tapeNoiseLevelAttachment = std::make_unique<SliderAttachment>(state, params::ids::tapeNoiseLevelDb, tapeNoiseLevel.getSlider());
-    tapeNoiseRouteAttachment = std::make_unique<ComboBoxAttachment>(state, params::ids::tapeNoiseRoute, tapeNoiseRoute.getComboBox());
+    noiseRoutingAttachment = std::make_unique<ComboBoxAttachment>(state, params::ids::noiseRouting, noiseRouting.getComboBox());
 
     dirtSaturationAttachment = std::make_unique<SliderAttachment>(state, params::ids::dirtSaturationAmt, dirtSaturation.getSlider());
     dirtBitDepthAttachment = std::make_unique<SliderAttachment>(state, params::ids::dirtBitDepthBits, dirtBitDepth.getSlider());
@@ -268,7 +268,7 @@ void DustboxEditor::resized()
     assignGroup(pumpGroup, 1);
     assignGroup(globalGroup, 0);
 
-    layoutGroupFlex(tapeGroup, { &tapeWowDepth, &tapeWowRate, &tapeFlutterDepth, &tapeToneLowpass, &tapeNoiseLevel, &tapeNoiseRoute });
+    layoutGroupFlex(tapeGroup, { &tapeWowDepth, &tapeWowRate, &tapeFlutterDepth, &tapeToneLowpass, &tapeNoiseLevel, &noiseRouting });
     layoutGroupFlex(dirtGroup, { &dirtSaturation, &dirtBitDepth, &dirtSampleRateDiv });
     layoutGroupFlex(pumpGroup, { &pumpAmount, &pumpSyncNote, &pumpPhase, &tempoDisplay });
 

@@ -79,10 +79,10 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
         11000.0f));
 
     layout.add(makeFloat({ ids::tapeNoiseLevelDb, "Noise Level", -60.0f, -20.0f, -48.0f }));
-    layout.add(makeChoice({ ids::tapeNoiseRoute,
-                            "Noise Route",
-                            juce::StringArray { "Wet Pre Pump", "Wet Post Pump", "Post Mix" },
-                            0 }));
+    layout.add(makeChoice({ ids::noiseRouting,
+                            "Noise Routing",
+                            juce::StringArray { "pre_tape", "post_tape", "parallel" },
+                            1 }));
 
     // Dirt
     layout.add(makeFloat({ ids::dirtSaturationAmt, "Saturation", 0.0f, 1.0f, 0.35f }));

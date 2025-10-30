@@ -29,6 +29,13 @@ namespace dustbox
 namespace
 {
 constexpr size_t maxProcessChannels = 16;
+
+enum class NoiseRouting
+{
+    PreTape = 0,
+    PostTape,
+    Parallel
+};
 }
 
 DustboxProcessor::DustboxProcessor()
@@ -47,6 +54,7 @@ void DustboxProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     const auto numChannels = getTotalNumInputChannels();
 
     tapeModule.prepare(sampleRate, samplesPerBlock, numChannels);
+    noiseModule.prepare(sampleRate, samplesPerBlock, numChannels);
     dirtModule.prepare(sampleRate, samplesPerBlock, numChannels);
     pumpModule.prepare(sampleRate, samplesPerBlock, numChannels);
 
@@ -63,6 +71,7 @@ void DustboxProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     bypassSmoother.setCurrentAndTargetValue(cachedParameters.hardBypass ? 1.0f : 0.0f);
 
     tapeModule.reset();
+    noiseModule.reset();
     dirtModule.reset();
     pumpModule.reset();
 
@@ -72,6 +81,7 @@ void DustboxProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 void DustboxProcessor::releaseResources()
 {
     dryBuffer.setSize(0, 0);
+    noiseModule.reset();
 }
 
 bool DustboxProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
@@ -127,11 +137,27 @@ void DustboxProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Midi
     const auto samplesPerCycle = hostTempo.getSamplesPerCycle(currentSampleRate, syncNoteIndex);
     pumpModule.setSync(samplesPerCycle, cachedParameters.pumpParams.phaseOffset);
 
+    noiseModule.generate(numSamples);
+    const auto& noise = noiseModule.getNoiseBuffer();
+    const auto noiseChannels = juce::jmin(noise.getNumChannels(), buffer.getNumChannels());
+    const auto noiseRouting = static_cast<NoiseRouting>(cachedParameters.noiseRoutingIndex);
+
+    if (noiseRouting == NoiseRouting::PreTape)
+    {
+        for (int channel = 0; channel < noiseChannels; ++channel)
+            buffer.addFrom(channel, 0, noise, channel, 0, numSamples);
+    }
+
     tapeModule.processBlock(buffer, numSamples);
+
+    if (noiseRouting == NoiseRouting::PostTape)
+    {
+        for (int channel = 0; channel < noiseChannels; ++channel)
+            buffer.addFrom(channel, 0, noise, channel, 0, numSamples);
+    }
+
     dirtModule.processBlock(buffer, numSamples);
     pumpModule.processBlock(buffer, numSamples);
-
-    addNoisePostPump(buffer, numSamples);
 
     wetMixSmoother.setTarget(cachedParameters.wetMix);
     outputGainSmoother.setTarget(cachedParameters.outputGain);
@@ -139,11 +165,16 @@ void DustboxProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Midi
     jassert(totalNumInputChannels <= static_cast<int>(maxProcessChannels));
     std::array<const float*, maxProcessChannels> dryPointers {};
     std::array<float*, maxProcessChannels> wetPointers {};
+    std::array<const float*, maxProcessChannels> noisePointers {};
+
+    const bool noiseParallel = noiseRouting == NoiseRouting::Parallel;
 
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
         dryPointers[static_cast<size_t>(channel)] = dryBuffer.getReadPointer(channel);
         wetPointers[static_cast<size_t>(channel)] = buffer.getWritePointer(channel);
+        if (noiseParallel && channel < noiseChannels)
+            noisePointers[static_cast<size_t>(channel)] = noise.getReadPointer(channel);
     }
 
     for (int sample = 0; sample < numSamples; ++sample)
@@ -156,11 +187,14 @@ void DustboxProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Midi
             const auto channelIndex = static_cast<size_t>(channel);
             const float drySample = dryPointers[channelIndex][sample];
             const float wetSample = wetPointers[channelIndex][sample];
-            wetPointers[channelIndex][sample] = (drySample * gains.dry + wetSample * gains.wet) * outputGain;
+            auto mixed = (drySample * gains.dry + wetSample * gains.wet) * outputGain;
+
+            if (noiseParallel && noisePointers[channelIndex] != nullptr)
+                mixed += noisePointers[channelIndex][sample] * outputGain;
+
+            wetPointers[channelIndex][sample] = mixed;
         }
     }
-
-    addNoisePostMix(buffer, numSamples);
     applyBypassRamp(buffer, numSamples);
 
     publishMeterReadings(buffer, outputMeterValues, totalNumOutputChannels, numSamples);
@@ -258,11 +292,11 @@ void DustboxProcessor::updateParameters()
     cachedParameters.tapeParams.wowRateHz = getFloat(params::ids::tapeWowRateHz);
     cachedParameters.tapeParams.flutterDepth = getFloat(params::ids::tapeFlutterDepth);
     cachedParameters.tapeParams.toneLowpassHz = getFloat(params::ids::tapeToneLowpassHz);
-    cachedParameters.tapeParams.noiseLevelDb = getFloat(params::ids::tapeNoiseLevelDb);
-    const auto noiseRouteIndex = juce::jlimit(0, 2, getChoice(params::ids::tapeNoiseRoute));
-    cachedParameters.tapeParams.noiseRoute = static_cast<dsp::TapeModule::NoiseRoute>(noiseRouteIndex);
-
     tapeModule.setParameters(cachedParameters.tapeParams);
+
+    cachedParameters.noiseParams.levelDb = getFloat(params::ids::tapeNoiseLevelDb);
+    cachedParameters.noiseRoutingIndex = juce::jlimit(0, 2, getChoice(params::ids::noiseRouting));
+    noiseModule.setParameters(cachedParameters.noiseParams);
 
     cachedParameters.dirtParams.saturationAmount = getFloat(params::ids::dirtSaturationAmt);
     cachedParameters.dirtParams.bitDepth = getChoice(params::ids::dirtBitDepthBits);
@@ -314,30 +348,6 @@ void DustboxProcessor::applyBypassRamp(juce::AudioBuffer<float>& buffer, int num
         bypassTransitionActive = false;
 }
 
-void DustboxProcessor::addNoisePostPump(juce::AudioBuffer<float>& wetBuffer, int numSamples)
-{
-    if (tapeModule.getNoiseRoute() != dsp::TapeModule::NoiseRoute::WetPostPump)
-        return;
-
-    const auto& noise = tapeModule.getNoiseBuffer();
-    jassert(noise.getNumSamples() >= numSamples);
-    const auto numChannels = wetBuffer.getNumChannels();
-    for (int channel = 0; channel < numChannels; ++channel)
-        wetBuffer.addFrom(channel, 0, noise, channel, 0, numSamples);
-}
-
-void DustboxProcessor::addNoisePostMix(juce::AudioBuffer<float>& mixBuffer, int numSamples)
-{
-    if (tapeModule.getNoiseRoute() != dsp::TapeModule::NoiseRoute::PostMix)
-        return;
-
-    const auto& noise = tapeModule.getNoiseBuffer();
-    jassert(noise.getNumSamples() >= numSamples);
-    const auto numChannels = mixBuffer.getNumChannels();
-    for (int channel = 0; channel < numChannels; ++channel)
-        mixBuffer.addFrom(channel, 0, noise, channel, 0, numSamples);
-}
-
 void DustboxProcessor::initialiseFactoryPresets()
 {
     using namespace params::ids;
@@ -362,7 +372,7 @@ void DustboxProcessor::initialiseFactoryPresets()
         setParam(state, tapeFlutterDepth, 0.05f);
         setParam(state, tapeToneLowpassHz, 14000.0f);
         setParam(state, tapeNoiseLevelDb, -48.0f);
-        setParam(state, tapeNoiseRoute, 0);
+        setParam(state, noiseRouting, 1);
         setParam(state, dirtSaturationAmt, 0.0f);
         setParam(state, dirtBitDepthBits, 24);
         setParam(state, dirtSampleRateDiv, 1);
@@ -380,6 +390,7 @@ void DustboxProcessor::initialiseFactoryPresets()
         setParam(state, tapeWowRateHz, 0.80f);
         setParam(state, tapeFlutterDepth, 0.04f);
         setParam(state, tapeToneLowpassHz, 9500.0f);
+        setParam(state, noiseRouting, 1);
         setParam(state, dirtSaturationAmt, 0.5f);
         setParam(state, dirtBitDepthBits, 8);
         setParam(state, dirtSampleRateDiv, 8);
@@ -405,6 +416,7 @@ void DustboxProcessor::initialiseFactoryPresets()
         setParam(state, mixWet, 1.0f);
         setParam(state, outputGainDb, 0.0f);
         setParam(state, hardBypass, false);
+        setParam(state, noiseRouting, 1);
     });
 
     addPreset("Noisy VHS", [setParam](juce::ValueTree& state)
@@ -414,7 +426,7 @@ void DustboxProcessor::initialiseFactoryPresets()
         setParam(state, tapeFlutterDepth, 0.18f);
         setParam(state, tapeToneLowpassHz, 7000.0f);
         setParam(state, tapeNoiseLevelDb, -36.0f);
-        setParam(state, tapeNoiseRoute, 2);
+        setParam(state, noiseRouting, 2);
         setParam(state, dirtSaturationAmt, 0.25f);
         setParam(state, dirtBitDepthBits, 16);
         setParam(state, dirtSampleRateDiv, 2);
@@ -441,6 +453,7 @@ void DustboxProcessor::initialiseFactoryPresets()
         setParam(state, mixWet, 0.5f);
         setParam(state, outputGainDb, 0.0f);
         setParam(state, hardBypass, false);
+        setParam(state, noiseRouting, 1);
     });
 }
 

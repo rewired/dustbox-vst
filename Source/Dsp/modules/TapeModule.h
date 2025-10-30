@@ -1,8 +1,8 @@
 /*
   ==============================================================================
   File: TapeModule.h
-  Responsibility: Encapsulate tape coloration processing (wow/flutter, tone,
-                  hiss routing) for the Dustbox signal chain.
+  Responsibility: Encapsulate tape coloration processing (wow/flutter, tone)
+                  for the Dustbox signal chain.
   Assumptions: prepare() is called before processBlock and parameters are
                updated from the owning processor.
   Notes: DSP implementation keeps allocations outside the realtime path and
@@ -16,28 +16,17 @@
 #include <juce_dsp/juce_dsp.h>
 #include <vector>
 
-#include "../utils/NoiseGenerator.h"
-
 namespace dustbox::dsp
 {
 class TapeModule
 {
 public:
-    enum class NoiseRoute
-    {
-        WetPrePump = 0,
-        WetPostPump,
-        PostMix
-    };
-
     struct Parameters
     {
         float wowDepth { 0.15f };
         float wowRateHz { 0.60f };
         float flutterDepth { 0.08f };
         float toneLowpassHz { 11000.0f };
-        float noiseLevelDb { -48.0f };
-        NoiseRoute noiseRoute { NoiseRoute::WetPrePump };
     };
 
     void prepare(double sampleRate, int samplesPerBlock, int numChannels);
@@ -45,9 +34,6 @@ public:
     void setParameters(const Parameters& newParams) noexcept;
 
     void processBlock(juce::AudioBuffer<float>& buffer, int numSamples) noexcept;
-
-    const juce::AudioBuffer<float>& getNoiseBuffer() const noexcept { return noiseBuffer; }
-    NoiseRoute getNoiseRoute() const noexcept { return parameters.noiseRoute; }
 
 private:
     static constexpr float baseDelayMs = 12.0f;
@@ -60,11 +46,9 @@ private:
     Parameters parameters {};
 
     juce::AudioBuffer<float> delayBuffer;
-    juce::AudioBuffer<float> noiseBuffer;
 
     std::vector<int> writePositions;
     std::vector<float> toneStates;
-    std::vector<NoiseGenerator> noiseGenerators;
 
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> toneCutoff;
 
