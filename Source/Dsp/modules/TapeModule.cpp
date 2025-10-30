@@ -1,8 +1,8 @@
 /*
   ==============================================================================
   File: TapeModule.cpp
-  Responsibility: Implement tape processing with modulated delay, tone roll-off,
-                  and hiss routing for the Dustbox signal chain.
+  Responsibility: Implement tape processing with modulated delay and tone
+                  roll-off for the Dustbox signal chain.
   Assumptions: Parameters are refreshed from the processor prior to processing
                each block. prepare() sizes all buffers; no allocations occur in
                processBlock().
@@ -17,8 +17,6 @@
 
 #include <juce_audio_basics/juce_audio_basics.h>
 
-#include "../utils/MathHelpers.h"
-
 namespace dustbox::dsp
 {
 namespace
@@ -26,7 +24,6 @@ namespace
 constexpr size_t maxSupportedChannels = 16; // Hard cap to keep stack allocations bounded.
 constexpr float minDelaySamples = 1.0f;
 constexpr float toneUpdateThreshold = 1.0e-3f;
-constexpr float noiseAudibleThreshold = 1.0e-6f;
 } // namespace
 
 void TapeModule::prepare(double sampleRate, int samplesPerBlock, int numChannels)
@@ -45,15 +42,8 @@ void TapeModule::prepare(double sampleRate, int samplesPerBlock, int numChannels
     delayBuffer.setSize(numChannels, delayBufferSize, false, false, true);
     delayBuffer.clear();
 
-    noiseBuffer.setSize(numChannels, samplesPerBlock, false, false, true);
-    noiseBuffer.clear();
-
     writePositions.assign(static_cast<size_t>(numChannels), 0);
     toneStates.assign(static_cast<size_t>(numChannels), 0.0f);
-    noiseGenerators.resize(static_cast<size_t>(numChannels));
-
-    for (size_t i = 0; i < noiseGenerators.size(); ++i)
-        noiseGenerators[i].seed(0xC0FFEEu + static_cast<uint32_t>(i * 131));
 
     toneCutoff.reset(sampleRate, 0.03f);
     toneCutoff.setCurrentAndTargetValue(parameters.toneLowpassHz);
@@ -67,7 +57,6 @@ void TapeModule::prepare(double sampleRate, int samplesPerBlock, int numChannels
 void TapeModule::reset()
 {
     delayBuffer.clear();
-    noiseBuffer.clear();
     std::fill(writePositions.begin(), writePositions.end(), 0);
     std::fill(toneStates.begin(), toneStates.end(), 0.0f);
 
@@ -114,19 +103,13 @@ void TapeModule::processBlock(juce::AudioBuffer<float>& buffer, int numSamples) 
                                        : 0.0f;
 
     const auto maxDelaySamplesFloat = static_cast<float>(delayBufferSize - 2);
-    const auto noiseGain = dbToGain(parameters.noiseLevelDb);
-    const auto noiseActive = noiseGain > noiseAudibleThreshold;
-    const auto addNoisePrePump = parameters.noiseRoute == NoiseRoute::WetPrePump;
-
     std::array<float*, maxSupportedChannels> bufferPointers {};
     std::array<float*, maxSupportedChannels> delayPointers {};
-    std::array<float*, maxSupportedChannels> noisePointers {};
 
     for (int channel = 0; channel < numChannels; ++channel)
     {
         bufferPointers[static_cast<size_t>(channel)] = buffer.getWritePointer(channel);
         delayPointers[static_cast<size_t>(channel)] = delayBuffer.getWritePointer(channel);
-        noisePointers[static_cast<size_t>(channel)] = noiseBuffer.getWritePointer(channel);
     }
 
     auto localWowPhase = wowPhase;
@@ -159,7 +142,6 @@ void TapeModule::processBlock(juce::AudioBuffer<float>& buffer, int numSamples) 
             const auto channelIndex = static_cast<size_t>(channel);
             auto* audio = bufferPointers[channelIndex];
             auto* delay = delayPointers[channelIndex];
-            auto* noise = noisePointers[channelIndex];
 
             auto writeIndex = writePositions[channelIndex];
             const auto inputSample = audio[sample];
@@ -182,12 +164,7 @@ void TapeModule::processBlock(juce::AudioBuffer<float>& buffer, int numSamples) 
             auto& toneState = toneStates[channelIndex];
             toneState += toneCoefficient * (delayedSample - toneState);
 
-            auto hiss = 0.0f;
-            if (noiseActive)
-                hiss = noiseGenerators[channelIndex].getNextSample() * noiseGain;
-
-            noise[sample] = hiss;
-            audio[sample] = toneState + (addNoisePrePump ? hiss : 0.0f);
+            audio[sample] = toneState;
 
             ++writeIndex;
             if (writeIndex >= delayBufferSize)
@@ -198,12 +175,6 @@ void TapeModule::processBlock(juce::AudioBuffer<float>& buffer, int numSamples) 
 
     wowPhase = localWowPhase;
     flutterPhase = localFlutterPhase;
-
-    if (! noiseActive)
-    {
-        for (int channel = 0; channel < numChannels; ++channel)
-            noiseBuffer.clear(channel, 0, numSamples);
-    }
 }
 } // namespace dustbox::dsp
 

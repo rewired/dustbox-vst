@@ -52,7 +52,7 @@ private:
     ui::LabeledSlider tapeFlutterDepth;
     ui::LabeledSlider tapeToneLowpass;
     ui::LabeledSlider tapeNoiseLevel;
-    ui::LabeledComboBox tapeNoiseRoute;
+    ui::LabeledComboBox noiseRouting;
 
     ui::LabeledSlider dirtSaturation;
     ui::LabeledSlider dirtBitDepth;
@@ -85,7 +85,7 @@ private:
     std::unique_ptr<SliderAttachment> tapeFlutterAttachment;
     std::unique_ptr<SliderAttachment> tapeToneAttachment;
     std::unique_ptr<SliderAttachment> tapeNoiseLevelAttachment;
-    std::unique_ptr<ComboBoxAttachment> tapeNoiseRouteAttachment;
+    std::unique_ptr<ComboBoxAttachment> noiseRoutingAttachment;
 
     std::unique_ptr<SliderAttachment> dirtSaturationAttachment;
     std::unique_ptr<SliderAttachment> dirtBitDepthAttachment;

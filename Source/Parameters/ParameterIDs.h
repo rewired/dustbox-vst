@@ -19,7 +19,9 @@ inline constexpr auto tapeWowRateHz      = "tapeWowRateHz";
 inline constexpr auto tapeFlutterDepth   = "tapeFlutterDepth";
 inline constexpr auto tapeToneLowpassHz  = "tapeToneLowpassHz";
 inline constexpr auto tapeNoiseLevelDb   = "tapeNoiseLevelDb";
-inline constexpr auto tapeNoiseRoute     = "tapeNoiseRoute";
+
+// Noise
+inline constexpr auto noiseRouting       = "noiseRouting";
 
 // Dirt
 inline constexpr auto dirtSaturationAmt  = "dirtSaturationAmt";
