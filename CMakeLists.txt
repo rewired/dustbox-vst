@@ -240,10 +240,22 @@ endif()
     string(CONFIGURE "${_dustbox_copy_script_template}" _dustbox_copy_script_configured @ONLY)
     file(WRITE "${_dustbox_copy_script}" "${_dustbox_copy_script_configured}")
 
-    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-        COMMAND "${CMAKE_COMMAND}" -Dsrc="$<TARGET_BUNDLE_DIR:${TARGET_NAME}>" -Ddst="${DUSTBOX_VST3_DEPLOY_DST}" -P "${_dustbox_copy_script}"
-        VERBATIM
-        COMMENT "Deploying ${DUSTBOX_VST3_BUNDLE_NAME} to ${DUSTBOX_DEPLOY_DIR}")
+    if(CMAKE_GENERATOR_PLATFORM)
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+            COMMAND "${CMAKE_COMMAND}" -E env
+                "CMAKE_GENERATOR=${CMAKE_GENERATOR}"
+                "CMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}"
+                "${CMAKE_COMMAND}" -Dsrc="$<TARGET_BUNDLE_DIR:${TARGET_NAME}>" -Ddst="${DUSTBOX_VST3_DEPLOY_DST}" -P "${_dustbox_copy_script}"
+            VERBATIM
+            COMMENT "Deploying ${DUSTBOX_VST3_BUNDLE_NAME} to ${DUSTBOX_DEPLOY_DIR}")
+    else()
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+            COMMAND "${CMAKE_COMMAND}" -E env
+                "CMAKE_GENERATOR=${CMAKE_GENERATOR}"
+                "${CMAKE_COMMAND}" -Dsrc="$<TARGET_BUNDLE_DIR:${TARGET_NAME}>" -Ddst="${DUSTBOX_VST3_DEPLOY_DST}" -P "${_dustbox_copy_script}"
+            VERBATIM
+            COMMENT "Deploying ${DUSTBOX_VST3_BUNDLE_NAME} to ${DUSTBOX_DEPLOY_DIR}")
+    endif()
     message(STATUS "Post-build deploy enabled. Safe copy target: ${DUSTBOX_VST3_DEPLOY_DST}")
 else()
     message(STATUS "Post-build deploy disabled. Use 'cmake --build <build-dir> --config <cfg> --target INSTALL' to deploy.")
