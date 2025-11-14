@@ -89,6 +89,12 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
     layout.add(makeInt({ ids::dirtBitDepthBits, "Bit Depth", 4, 24, 12 }));
     layout.add(makeInt({ ids::dirtSampleRateDiv, "Sample Rate Div", 1, 16, 2 }));
 
+    // Reverb
+    layout.add(makeFloat({ ids::reverbPreDelayMs, "Reverb Pre-delay", 0.0f, 120.0f, 20.0f, 30.0f }));
+    layout.add(makeFloat({ ids::reverbDecayTime, "Reverb Decay", 0.10f, 8.0f, 1.8f, 1.0f }));
+    layout.add(makeFloat({ ids::reverbDamping, "Reverb Damping", 0.0f, 1.0f, 0.35f }));
+    layout.add(makeFloat({ ids::reverbMix, "Reverb Mix", 0.0f, 1.0f, 0.25f }));
+
     // Pump
     layout.add(makeFloat({ ids::pumpAmount, "Pump Amount", 0.0f, 1.0f, 0.35f }));
     layout.add(makeChoice({ ids::pumpSyncNote,
