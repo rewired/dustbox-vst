@@ -1,14 +1,10 @@
 # Changelog
 
 ## [Unreleased]
-- Dialed in musical reverb voicings for every factory preset and ensured the
-  mix stays at 0.0 where the ambience should remain bypassed.
-- Added a preset ValueTree regression check that validates reverb properties
-  serialise with the expected values across all factory programs.
-- Added a dedicated ReverbModule with APVTS-controlled pre-delay, decay, damping,
-  and mix, integrated into the processor flow and build system.
-- Added a REVERB control group to the generic editor with formatted sliders for
-  pre-delay, decay, damping, and mix alongside updated layout minimums.
+- Introduced a dedicated ReverbModule with APVTS-controlled pre-delay, decay,
+  damping, and mix parameters, surfaced through a REVERB control group in the
+  generic editor and captured in factory preset refreshes that audition musical
+  voicings while keeping ambience bypassed where required.
 - Added five deterministic factory presets (Subtle Glue, Lo-Fi Hiss, Chorus Pump, Warm Crunch, Noisy Parallel) exposed via the
   AudioProcessor program interface with APVTS snapshot recall.
 - Ensured post-build deploy commands set `CMAKE_GENERATOR` alongside `CMAKE_GENERATOR_PLATFORM` so Visual Studio builds no longer emit spurious generator warnings.

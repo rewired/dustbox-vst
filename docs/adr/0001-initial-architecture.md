@@ -10,7 +10,7 @@ The first delivery of Dustbox requires a production-ready JUCE project skeleton 
 - Use CMake with `juce_add_plugin` to target VST3 only, keeping the build portable across Windows and macOS.
 - Structure the source tree into `Core`, `Parameters`, `Dsp`, `Plugin`, and `Ui` folders to isolate responsibilities and ease future DSP iteration.
 - Drive all parameters through APVTS with stable string IDs and smoothing hooks managed by the processor.
-- Implement Tape, Dirt, and Pump modules as realtime-safe stubs exposing `prepare`, `reset`, and `processBlock`, including tempo syncing and noise routing placeholders.
+- Implement Tape, Dirt, and Pump modules as realtime-safe stubs exposing `prepare`, `reset`, and `processBlock`, including tempo syncing and noise routing placeholders. Subsequent module additions such as the Reverb stage are captured in follow-up ADRs (see [ADR 0006](./0006-reverb-module.md)).
 - Provide a generic grouped editor using JUCE attachments so the entire parameter set is host-automatable before the bespoke UI arrives.
 
 ## Consequences
