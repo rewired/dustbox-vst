@@ -1,10 +1,10 @@
 # Dustbox
 
-Dustbox is a JUCE-based audio effect plugin scaffold targeting macOS and Windows. The current deliverable builds a zero-latency VST3 that wires an `AudioProcessorValueTreeState` parameter model to three DSP module stubs (Tape, Dirt, Pump) and a minimal grouped UI. No creative DSP is implemented yet; this repository establishes the production-ready structure for further development.
+ Dustbox is a JUCE-based audio effect plugin scaffold targeting macOS and Windows. The current deliverable builds a zero-latency VST3 that wires an `AudioProcessorValueTreeState` parameter model to four DSP module stubs (Tape, Dirt, Reverb, Pump) and a minimal grouped UI. No creative DSP is implemented yet; this repository establishes the production-ready structure for further development.
 
 ### What is Dustbox?
 
-- **Creative lo-fi coloration toolkit** focused on tape wobble (AGE), digital grit (DIRT), and tempo-synced pumping (PUMP).
+- **Creative lo-fi coloration toolkit** focused on tape wobble (AGE), digital grit (DIRT), spacious ambience (REVERB), and tempo-synced pumping (PUMP).
 - **JUCE 8 scaffold** with realtime-safe processor flow, APVTS parameter layout, and grouped generic UI ready for skinning.
 - **Cross-platform VST3 project** for Windows and macOS today, with AU support planned once DSP is implemented.
 
@@ -52,7 +52,7 @@ cmake --build build --config Release --target INSTALL
 
 - **Zero-latency** VST3 with realtime-safe audio thread (no allocations, locks, or file I/O in `processBlock`).
 - **Parameter model** via `AudioProcessorValueTreeState` with stable IDs and automation-ready ranges.
-- **Module stubs** for Tape, Dirt, and Pump processing, including tempo sync and noise routing placeholders.
+- **Module stubs** for Tape, Dirt, Reverb, and Pump processing (see [ADR 0006](./docs/adr/0006-reverb-module.md)), including tempo sync and noise routing placeholders.
 - **Grouped generic UI** built with JUCE controls and attachments—ready for a custom skin later.
 
 Refer to the [CHANGELOG](./CHANGELOG.md) and ADRs under [`docs/adr`](./docs/adr) for design notes and future decision tracking.

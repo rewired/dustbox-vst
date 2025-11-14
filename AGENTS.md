@@ -44,11 +44,12 @@ Outcome for users: **instant dusty tape feel, crunchy downgrade, musical pump** 
 
   1. **TapeModule** — modulated-delay **wow/flutter**, LPF tone, hiss (switchable routing).
   2. **DirtModule** — **saturation → quantization → sample-hold downsample**.
-  3. **PumpModule** — gain envelope with **fast decay + eased release**, host-synced.
+  3. **ReverbModule** — ambience block with pre-delay, decay, damping, and mix controls ([ADR 0006](docs/adr/0006-reverb-module.md)).
+  4. **PumpModule** — gain envelope with **fast decay + eased release**, host-synced.
 * **Parameter Smoothing:** `juce::SmoothedValue` (10–30 ms; log mapping for cutoff; equal-power mix).
 * **Noise Routing (user-selectable):**
   `WetPrePump` (ducked) / `WetPostPump` (not ducked) / `PostMix` (global hiss).
-* **Processing order:** **Tape → Dirt → Pump → Mix → Output**
+* **Processing order:** **Tape → Dirt → Reverb → Pump → Mix → Output**
   Parallel dry path; equal-power crossfade; output gain; click-free bypass ramp.
 
 ---
@@ -136,7 +137,7 @@ Source/
   3. fetch params (atomic) → advance **smoothers**
   4. query **host tempo** (fallback 120 BPM) → compute samples/cycle & phase offset → pass to Pump
   5. copy input → dryBuffer
-  6. **Tape → Dirt → Pump** on wet buffer
+  6. **Tape → Dirt → Reverb → Pump** on wet buffer
   7. **equal-power** mix dry/wet → `outputGainDb`
 * **releaseResources:** free scratch if needed; keep state.
 
