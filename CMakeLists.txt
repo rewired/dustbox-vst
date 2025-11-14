@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(Dustbox VERSION 0.0.1 LANGUAGES CXX)
+project(Dustbox VERSION 0.0.1 LANGUAGES C CXX)
 
 set(TARGET_NAME Dustbox)
 
@@ -70,6 +70,38 @@ target_compile_definitions(${TARGET_NAME}
 if(DUSTBOX_ENABLE_WARNINGS)
     dustbox_enable_warnings(${TARGET_NAME} ${DUSTBOX_STRICT_BUILD})
 endif()
+
+juce_add_console_app(PresetValueTreeCheck
+    PRODUCT_NAME "PresetValueTreeCheck")
+
+target_sources(PresetValueTreeCheck PRIVATE
+    tests/PresetValueTreeCheck.cpp
+    Source/Presets/FactoryPresets.cpp)
+
+target_compile_features(PresetValueTreeCheck PRIVATE cxx_std_17)
+
+target_include_directories(PresetValueTreeCheck PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_link_libraries(PresetValueTreeCheck
+    PRIVATE
+        juce::juce_audio_processors
+        juce::juce_gui_basics)
+
+juce_generate_juce_header(PresetValueTreeCheck)
+
+target_compile_definitions(PresetValueTreeCheck
+    PRIVATE
+        JUCE_USE_GTK=0
+        JUCE_WEB_BROWSER=0
+        JUCE_USE_CURL=0)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+
+target_include_directories(PresetValueTreeCheck PRIVATE ${GTK3_INCLUDE_DIRS})
+target_link_libraries(PresetValueTreeCheck PRIVATE ${GTK3_LIBRARIES})
+target_compile_options(PresetValueTreeCheck PRIVATE ${GTK3_CFLAGS_OTHER})
 
 # --- Deploy & install configuration ---------------------------------------------------------
 
