@@ -45,6 +45,7 @@ private:
     ui::GroupContainer tapeGroup;
     ui::GroupContainer dirtGroup;
     ui::GroupContainer pumpGroup;
+    ui::GroupContainer reverbGroup;
     ui::GroupContainer globalGroup;
 
     ui::LabeledSlider tapeWowDepth;
@@ -61,6 +62,11 @@ private:
     ui::LabeledSlider pumpAmount;
     ui::LabeledComboBox pumpSyncNote;
     ui::LabeledSlider pumpPhase;
+
+    ui::LabeledSlider reverbPreDelay;
+    ui::LabeledSlider reverbDecayTime;
+    ui::LabeledSlider reverbDamping;
+    ui::LabeledSlider reverbMix;
     ui::HostTempoDisplay tempoDisplay;
 
     ui::LabeledSlider mixWet;
@@ -94,6 +100,11 @@ private:
     std::unique_ptr<SliderAttachment> pumpAmountAttachment;
     std::unique_ptr<ComboBoxAttachment> pumpSyncAttachment;
     std::unique_ptr<SliderAttachment> pumpPhaseAttachment;
+
+    std::unique_ptr<SliderAttachment> reverbPreDelayAttachment;
+    std::unique_ptr<SliderAttachment> reverbDecayAttachment;
+    std::unique_ptr<SliderAttachment> reverbDampingAttachment;
+    std::unique_ptr<SliderAttachment> reverbMixAttachment;
 
     std::unique_ptr<SliderAttachment> mixWetAttachment;
     std::unique_ptr<SliderAttachment> outputGainAttachment;
