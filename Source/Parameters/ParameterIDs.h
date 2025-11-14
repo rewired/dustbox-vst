@@ -28,6 +28,12 @@ inline constexpr auto dirtSaturationAmt  = "dirtSaturationAmt";
 inline constexpr auto dirtBitDepthBits   = "dirtBitDepthBits";
 inline constexpr auto dirtSampleRateDiv  = "dirtSampleRateDiv";
 
+// Reverb
+inline constexpr auto reverbPreDelayMs   = "reverbPreDelayMs";
+inline constexpr auto reverbDecayTime    = "reverbDecayTime";
+inline constexpr auto reverbDamping      = "reverbDamping";
+inline constexpr auto reverbMix          = "reverbMix";
+
 // Pump
 inline constexpr auto pumpAmount         = "pumpAmount";
 inline constexpr auto pumpSyncNote       = "pumpSyncNote";
