@@ -16,6 +16,7 @@
 #include "../Core/Version.h"
 #include "../Dsp/modules/DirtModule.h"
 #include "../Dsp/modules/NoiseModule.h"
+#include "../Dsp/modules/ReverbModule.h"
 #include "../Dsp/modules/PumpModule.h"
 #include "../Dsp/modules/TapeModule.h"
 #include "../Dsp/utils/ParameterSmoother.h"
@@ -105,6 +106,7 @@ private:
     dsp::TapeModule tapeModule;
     dsp::NoiseModule noiseModule;
     dsp::DirtModule dirtModule;
+    dsp::ReverbModule reverbModule;
     dsp::PumpModule pumpModule;
     dsp::ParameterSmoother wetMixSmoother;
     dsp::ParameterSmoother outputGainSmoother;
@@ -129,8 +131,10 @@ private:
         dsp::TapeModule::Parameters tapeParams;
         dsp::DirtModule::Parameters dirtParams;
         dsp::PumpModule::Parameters pumpParams;
+        dsp::ReverbModule::Parameters reverbParams;
         dsp::NoiseModule::Parameters noiseParams;
         int noiseRoutingIndex { 1 };
+        float reverbMix { 0.25f };
         float wetMix { 0.5f };
         float outputGain { 1.0f };
         bool hardBypass { false };

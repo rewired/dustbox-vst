@@ -39,6 +39,7 @@ target_sources(${TARGET_NAME} PRIVATE
     Source/Dsp/modules/TapeModule.cpp
     Source/Dsp/modules/DirtModule.cpp
     Source/Dsp/modules/PumpModule.cpp
+    Source/Dsp/modules/ReverbModule.cpp
     Source/Ui/GenericControls.cpp)
 
 target_compile_features(${TARGET_NAME} PRIVATE cxx_std_17)
