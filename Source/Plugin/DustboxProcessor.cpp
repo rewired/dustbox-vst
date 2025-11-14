@@ -78,6 +78,7 @@ void DustboxProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     tapeModule.prepare(sampleRate, samplesPerBlock, numChannels);
     noiseModule.prepare(sampleRate, samplesPerBlock, numChannels);
     dirtModule.prepare(sampleRate, samplesPerBlock, numChannels);
+    reverbModule.prepare(sampleRate, samplesPerBlock, numChannels);
     pumpModule.prepare(sampleRate, samplesPerBlock, numChannels);
 
     dryBuffer.setSize(numChannels, samplesPerBlock);
@@ -95,6 +96,7 @@ void DustboxProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     tapeModule.reset();
     noiseModule.reset();
     dirtModule.reset();
+    reverbModule.reset();
     pumpModule.reset();
 
     bypassTransitionActive = false;
@@ -104,6 +106,7 @@ void DustboxProcessor::releaseResources()
 {
     dryBuffer.setSize(0, 0);
     noiseModule.reset();
+    reverbModule.reset();
 }
 
 bool DustboxProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
@@ -180,6 +183,7 @@ void DustboxProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Midi
 
     dirtModule.processBlock(buffer, numSamples);
     pumpModule.processBlock(buffer, numSamples);
+    reverbModule.processBlock(buffer, numSamples, cachedParameters.reverbMix);
 
     wetMixSmoother.setTarget(cachedParameters.wetMix);
     outputGainSmoother.setTarget(cachedParameters.outputGain);
@@ -329,6 +333,13 @@ void DustboxProcessor::updateParameters()
     cachedParameters.dirtParams.bitDepth = getChoice(params::ids::dirtBitDepthBits);
     cachedParameters.dirtParams.sampleRateDiv = getChoice(params::ids::dirtSampleRateDiv);
     dirtModule.setParameters(cachedParameters.dirtParams);
+
+    cachedParameters.reverbParams.preDelayMs = juce::jlimit(0.0f, 120.0f, getFloat(params::ids::reverbPreDelayMs));
+    cachedParameters.reverbParams.decayTime = juce::jlimit(0.1f, 8.0f, getFloat(params::ids::reverbDecayTime));
+    cachedParameters.reverbParams.damping = juce::jlimit(0.0f, 1.0f, getFloat(params::ids::reverbDamping));
+    cachedParameters.reverbParams.mix = juce::jlimit(0.0f, 1.0f, getFloat(params::ids::reverbMix));
+    cachedParameters.reverbMix = cachedParameters.reverbParams.mix;
+    reverbModule.setParameters(cachedParameters.reverbParams);
 
     cachedParameters.pumpParams.amount = getFloat(params::ids::pumpAmount);
     cachedParameters.pumpParams.syncNoteIndex = juce::jlimit(0, 2, getChoice(params::ids::pumpSyncNote));

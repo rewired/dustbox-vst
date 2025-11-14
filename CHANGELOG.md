@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+- Added a dedicated ReverbModule with APVTS-controlled pre-delay, decay, damping,
+  and mix, integrated into the processor flow and build system.
 - Added five deterministic factory presets (Subtle Glue, Lo-Fi Hiss, Chorus Pump, Warm Crunch, Noisy Parallel) exposed via the
   AudioProcessor program interface with APVTS snapshot recall.
 - Ensured post-build deploy commands set `CMAKE_GENERATOR` alongside `CMAKE_GENERATOR_PLATFORM` so Visual Studio builds no longer emit spurious generator warnings.
