@@ -35,6 +35,7 @@ DustboxEditor::DustboxEditor(DustboxProcessor& p)
     , tapeGroup("TAPE")
     , dirtGroup("DIRT")
     , pumpGroup("PUMP")
+    , reverbGroup("REVERB")
     , globalGroup("GLOBAL")
     , tapeWowDepth("Wow Depth")
     , tapeWowRate("Wow Rate")
@@ -48,6 +49,10 @@ DustboxEditor::DustboxEditor(DustboxProcessor& p)
     , pumpAmount("Amount")
     , pumpSyncNote("Sync")
     , pumpPhase("Phase")
+    , reverbPreDelay("Pre-Delay")
+    , reverbDecayTime("Decay")
+    , reverbDamping("Damping")
+    , reverbMix("Mix")
     , mixWet("Mix")
     , outputGain("Output")
     , hardBypass("Hard Bypass")
@@ -75,6 +80,12 @@ DustboxEditor::DustboxEditor(DustboxProcessor& p)
     pumpGroup.addAndMakeVisible(pumpPhase);
     pumpGroup.addAndMakeVisible(tempoDisplay);
 
+    addAndMakeVisible(reverbGroup);
+    reverbGroup.addAndMakeVisible(reverbPreDelay);
+    reverbGroup.addAndMakeVisible(reverbDecayTime);
+    reverbGroup.addAndMakeVisible(reverbDamping);
+    reverbGroup.addAndMakeVisible(reverbMix);
+
     addAndMakeVisible(globalGroup);
     globalGroup.addAndMakeVisible(mixWet);
     globalGroup.addAndMakeVisible(outputGain);
@@ -93,8 +104,8 @@ DustboxEditor::DustboxEditor(DustboxProcessor& p)
     pumpSyncParameter = processor.getValueTreeState().getRawParameterValue(params::ids::pumpSyncNote);
 
     setResizable(true, true);
-    setResizeLimits(720, 560, 1280, 960);
-    setSize(820, 640);
+    setResizeLimits(720, 640, 1280, 960);
+    setSize(840, 680);
 
     startTimerHz(30);
 }
@@ -120,6 +131,8 @@ void DustboxEditor::initialiseControls()
     configurePercentSlider(tapeFlutterDepth);
     configurePercentSlider(dirtSaturation);
     configurePercentSlider(pumpAmount);
+    configurePercentSlider(reverbDamping);
+    configurePercentSlider(reverbMix);
     configurePercentSlider(mixWet);
 
     auto& wowRate = tapeWowRate.getSlider();
@@ -133,6 +146,14 @@ void DustboxEditor::initialiseControls()
     auto& noise = tapeNoiseLevel.getSlider();
     noise.setNumDecimalPlacesToDisplay(1);
     noise.setTextValueSuffix(" dB");
+
+    auto& reverbPreDelaySlider = reverbPreDelay.getSlider();
+    reverbPreDelaySlider.setNumDecimalPlacesToDisplay(1);
+    reverbPreDelaySlider.setTextValueSuffix(" ms");
+
+    auto& reverbDecaySlider = reverbDecayTime.getSlider();
+    reverbDecaySlider.setNumDecimalPlacesToDisplay(2);
+    reverbDecaySlider.setTextValueSuffix(" s");
 
     auto& bitDepth = dirtBitDepth.getSlider();
     bitDepth.setNumDecimalPlacesToDisplay(0);
@@ -211,6 +232,11 @@ void DustboxEditor::initialiseAttachments()
     pumpSyncAttachment = std::make_unique<ComboBoxAttachment>(state, params::ids::pumpSyncNote, pumpSyncNote.getComboBox());
     pumpPhaseAttachment = std::make_unique<SliderAttachment>(state, params::ids::pumpPhase, pumpPhase.getSlider());
 
+    reverbPreDelayAttachment = std::make_unique<SliderAttachment>(state, params::ids::reverbPreDelayMs, reverbPreDelay.getSlider());
+    reverbDecayAttachment = std::make_unique<SliderAttachment>(state, params::ids::reverbDecayTime, reverbDecayTime.getSlider());
+    reverbDampingAttachment = std::make_unique<SliderAttachment>(state, params::ids::reverbDamping, reverbDamping.getSlider());
+    reverbMixAttachment = std::make_unique<SliderAttachment>(state, params::ids::reverbMix, reverbMix.getSlider());
+
     mixWetAttachment = std::make_unique<SliderAttachment>(state, params::ids::mixWet, mixWet.getSlider());
     outputGainAttachment = std::make_unique<SliderAttachment>(state, params::ids::outputGainDb, outputGain.getSlider());
     hardBypassAttachment = std::make_unique<ButtonAttachment>(state, params::ids::hardBypass, hardBypass.getButton());
@@ -263,14 +289,16 @@ void DustboxEditor::resized()
         group.setBounds(area);
     };
 
-    assignGroup(tapeGroup, 3);
-    assignGroup(dirtGroup, 2);
-    assignGroup(pumpGroup, 1);
+    assignGroup(tapeGroup, 4);
+    assignGroup(dirtGroup, 3);
+    assignGroup(pumpGroup, 2);
+    assignGroup(reverbGroup, 1);
     assignGroup(globalGroup, 0);
 
     layoutGroupFlex(tapeGroup, { &tapeWowDepth, &tapeWowRate, &tapeFlutterDepth, &tapeToneLowpass, &tapeNoiseLevel, &noiseRouting });
     layoutGroupFlex(dirtGroup, { &dirtSaturation, &dirtBitDepth, &dirtSampleRateDiv });
     layoutGroupFlex(pumpGroup, { &pumpAmount, &pumpSyncNote, &pumpPhase, &tempoDisplay });
+    layoutGroupFlex(reverbGroup, { &reverbPreDelay, &reverbDecayTime, &reverbDamping, &reverbMix });
 
     auto globalContent = globalGroup.getContentBounds();
     const int meterWidth = juce::jlimit(160, globalContent.getWidth(), 240);
